@@ -19,6 +19,7 @@ charge_summary <- raw_oath_bit %>%
 
 # made common grouping categories, used excel
 cats <- read_csv("data/output/charges.csv")
+write_csv(cats, "data/output/charges_grouped.csv")
 
 cats_r <- cats %>% 
   group_by(relevant_charge) %>% 
