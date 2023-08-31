@@ -1,0 +1,218 @@
+---
+title: "SanitationRQ_8.23.23"
+output: html_document
+date: "2023-08-23"
+---
+
+Good morning! Here's the 311 data you asked for on street cleanliness (DSNY), illegal dumping (DSNY), derelict vehicles (DSNY), and catch basin complaints (DEP). For catch basin complaints, this includes complaints located at catch basins as well complaints that had 'catch basin' in the complaint description. 
+
+For grease (DEP) - I couldn't find anything specifically on yellow and brown grease, but I've attached the complaints that contained the word 'grease' in the description. 
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(vroom)
+library(leaflet)
+library(leaflet.extras)
+library(janitor)
+library(data.table)
+library(zoo)
+library(councildown)
+```
+
+- 311 Data on Street Cleanliness Complaints Over Time and by Community District (We used similar data on in March 2022 hearing) 
+
+- 311 Data on Illegal Dumping 
+
+- 311 Data on Derelict Vehicles 
+
+- 311 Data on Catch Basin Complaints Over Time and by Community District 
+  subset to complaints located at catch basins, contains catch basin in the description of complaint
+
+- Any data available on the disposal of yellow and brown grease 
+
+**Using 311 complaints available from 2018 and beyond:**
+
+```{r}
+dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2018-01-01'&$limit=999999999999")
+```
+
+```{r}
+setDT(dsny_311)
+dsny_311[, created_date := as.Date(created_date)][, yr := year(created_date)][, mo := month(created_date)]
+dsny_311[, date_ym:=as.yearmon(created_date)]
+```
+
+
+#### STREET CLEANLINESS ####
+
+Using Brook's code from Feb 23.
+
+```{r}
+od_dl <- dsny_311
+```
+
+```{r}
+# let's group in a sensible way to reduce categories
+od_dl[complaint_type %in% "Missed Collection (All Materials)", complaint_type := "Missed Collection"]
+od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition"), complaint_type := "Dirty Conditions"]
+od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Sanitation Condition")]
+```
+
+```{r}
+sani_yrs_sub <- od_dl_sub[, .N, by = yr][order(yr, decreasing = TRUE
+)]
+
+# total number of DSNY complaints
+od_dl_yrs <- od_dl[, .N, by = yr]
+setnames(od_dl_yrs, "N", "Total DSNY")
+setnames(sani_yrs_sub, "N", "Dirty/Missed Collection")
+yrs_dsny <- merge(od_dl_yrs, sani_yrs_sub)
+od_dl_sub[, n_comp := .N, by = c("complaint_type", "date_ym")]
+od_dl_sub <- od_dl_sub[, .(complaint_type, date_ym, n_comp)]
+od_dl_sub <- unique(od_dl_sub)
+# od_dl_sub[complaint_type %in% "Missed Collections" & ]
+```
+
+```{r}
+# ---- Street cleanliness over time: plot
+ggplot(od_dl_sub[od_dl_sub$date_ym < "2023-09-01"], aes(x= date_ym, y=n_comp, color=complaint_type), group=complaint_type) + geom_line() + 
+  theme_bw() + labs(x="Date", y="Number of Complaints", title="311 Data on Street Cleanliness Complaints Over Time", 
+                    subtitle="Jan 2018 - July 2023", colour="Complaint type") + theme_nycc()
+ggsave(filename = "clean_over_time.png", path = "visuals", width=10, height=7)
+# ---- Street cleanliness over time: plot
+ggplot(od_dl_sub[od_dl_sub$date_ym < "2023-09-01"], aes(x= date_ym, y=n_comp, color=complaint_type), group=complaint_type) + geom_smooth(method="loess", se=FALSE) + 
+  theme_bw() + labs(x="Date", y="Number of Complaints", title="311 Data on Street Cleanliness Complaints Over Time", 
+                    subtitle="Jan 2018 - July 2023", colour="Complaint type") + theme_nycc() # + scale_color_discrete(palette="diverging")
+ggsave(filename = "clean_over_time_smooth.png", path = "visuals", width=10, height=7)
+```
+
+```{r}
+# ---- Street cleanliness over time: table
+# od_dl_sub[od_dl_sub$date_ym < "2023-09-01"] %>% arrange(complaint_type)
+clean_over_time_df <- dcast(melt(as.data.table(od_dl_sub[od_dl_sub$date_ym < "2023-09-01"]), id.vars = c("complaint_type", "date_ym")), 
+      date_ym + variable ~ complaint_type, value.var = "value") %>% select(date_ym, `Dirty Conditions`, `Missed Collection`, `Sanitation Condition`)
+# clean_over_time_df
+write.csv(clean_over_time_df, "data/output/clean_over_time.csv")
+```
+
+```{r}
+# ---- Street cleanliness by community district: table
+clean_by_cd_df <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Sanitation Condition")] %>% group_by(community_board) %>% summarise(count=n())
+# clean_by_cd_df
+write.csv(clean_by_cd_df, "data/output/clean_by_comm.csv")
+```
+
+#### ILLEGAL DUMPING ####
+
+```{r}
+# subset DSNY complaints to illegal dumping
+dsny_311_id <- dsny_311[dsny_311$complaint_type == "Illegal Dumping",]
+# unique(dsny_311_id$complaint_type)
+```
+
+```{r}
+# ---- Illegal dumping over time: table
+id_over_time_df <- dsny_311_id %>% group_by(date_ym) %>% summarise(n_comp=n())
+id_over_time_df
+write.csv(id_over_time_df, "data/output/id_over_time.csv")
+# dsny_311_id_my
+```
+
+```{r}
+# ---- Illegal dumping over time: plot
+ggplot(id_over_time_df[id_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_smooth(method="loess", se=FALSE) + labs(x="Date", y="Number of Complaints", title="311 Data on Illegal Dumping Complaints Over Time", subtitle="Sep 2021 - July 2023 \nData includes complaints filed with DSNY, excludes DEP.") + theme_nycc() 
+ggsave(filename = "id_over_time_smooth.png", path = "visuals", width=10, height=7)
+ggplot(id_over_time_df[id_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_line() + labs(x="Date", y="Number of Complaints", title="311 Data on Illegal Dumping Complaints Over Time", subtitle="Sep 2021 - July 2023 \nData includes complaints filed with DSNY, excludes DEP.") + theme_nycc() 
+ggsave(filename = "id_over_time.png", path = "visuals", width=10, height=7)
+```
+
+```{r}
+# ---- Illegal dumping by community district: table
+id_by_cd_df <- dsny_311_id %>% group_by(community_board) %>% summarise(n_comp=n())
+id_by_cd_df
+write.csv(id_by_cd_df, "data/output/id_by_comm.csv")
+```
+
+#### DERELICT VEHICLES ####
+
+```{r}
+# subset DSNY complaints to derelict vehicles
+dsny_311_dv <- dsny_311[dsny_311$complaint_type == "Derelict Vehicles",]
+```
+
+```{r}
+# ---- Derelict vehicles over time: table
+dv_over_time_df <- dsny_311_dv %>% group_by(date_ym) %>% summarise(n_comp=n())
+dv_over_time_df
+write.csv(dv_over_time_df, "data/output/dv_over_time.csv")
+```
+
+```{r}
+# ---- Derelict vehicles over time: table
+ggplot(dv_over_time_df[dv_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_smooth(method="loess", se=FALSE) + labs(x="Date", y="Number of Complaints", title="311 Data on Derelict Vehicle Complaints Over Time", subtitle="Jan 2018 - July 2023") + theme_nycc() 
+ggsave(filename = "dv_over_time_smooth.png", path = "visuals", width=10, height=7)
+ggplot(dv_over_time_df[dv_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_line() + labs(x="Date", y="Number of Complaints", title="311 Data on Derelict Vehicle Complaints Over Time", subtitle="Jan 2018 - July 2023") + theme_nycc() 
+ggsave(filename = "dv_over_time.png", path = "visuals", width=10, height=7)
+```
+
+```{r}
+# ---- Derelict vehicles by community district: table
+dv_by_cd_df <- dsny_311_dv %>% group_by(community_board) %>% summarise(n_comp=n())
+write.csv(dv_over_time_df, "data/output/dv_by_comm.csv")
+```
+
+-------------------
+
+```{r}
+dep_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DEP'&$where=created_date>='2018-01-01'&$limit=999999999999")
+```
+
+```{r}
+setDT(dep_311)
+dep_311[, created_date := as.Date(created_date)][, yr := year(created_date)][, mo := month(created_date)]
+dep_311[, date_ym:=as.yearmon(created_date)]
+```
+
+#### CATCH BASIN COMPLAINTS ####
+
+```{r}
+# subset to complaints located at catch basins, contains catch basin in the description of complaint
+dep_311_cb <- dep_311[grepl("catch", dep_311$location_type, ignore.case = TRUE) | grepl("catch", dep_311$descriptor, ignore.case = TRUE),]
+dep_311_cb
+```
+
+```{r}
+# ---- Catch basin over time: table
+cb_over_time_df <- dep_311_cb %>% group_by(date_ym) %>% summarise(n_comp=n())
+cb_over_time_df
+write.csv(cb_over_time_df, "data/output/cb_over_time.csv")
+```
+
+```{r}
+# ---- Catch basin over time: plot
+ggplot(cb_over_time_df[cb_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_smooth(method="loess", se=FALSE) + labs(x="Date", y="Number of Complaints", title="311 Data on Catch Basin Complaints Over Time", subtitle="Jan 2018 - July 2023 \nData includes complaints located at catch basins or containing 'catch basin' in desc.") + theme_nycc()
+ggsave(filename = "cb_over_time_smooth.png", path = "visuals", width=10, height=7)
+ggplot(cb_over_time_df[cb_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_line() + labs(x="Date", y="Number of Complaints", title="311 Data on Catch Basin Complaints Over Time", subtitle="Jan 2018 - July 2023 \nData includes complaints located at catch basins or containing 'catch basin' in desc.") + theme_nycc() 
+ggsave(filename = "cb_over_time.png", path = "visuals", width=10, height=7)
+```
+
+```{r}
+# ---- Catch basin by community district: table
+cb_by_cd_df <- dep_311_cb %>% group_by(community_board) %>% summarise(n_comp=n())
+write.csv(cb_by_cd_df, "data/output/cb_by_comm.csv")
+```
+
+#### YELLOW AND BROWN GREASE ####
+
+```{r}
+dep_311_grease <- dep_311[grepl("grease", dep_311$descriptor, ignore.case = TRUE),]
+dep_311_grease
+write.csv(dep_311_grease, "data/output/all_grease_data.csv")
+```
+
+
+
+
+
