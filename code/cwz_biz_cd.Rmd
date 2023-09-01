@@ -1,0 +1,71 @@
+---
+title: "cd_biz"
+author: "Brook Frye"
+date: "9/4/2019"
+output: html_document
+---
+
+```{r echo=FALSE}
+# let's read in all the businesses 
+library(data.table)
+library(sf)
+library(leaflet)
+library(dplyr)
+library(stringr)
+
+# cd <- read_sf("Community Districts")
+# read in shape files 
+tax_lots <- st_read("shapes/MapPLUTO.shp") %>%
+  st_simplify(preserveTopology = TRUE,
+              dTolerance = 100) %>%
+  st_cast("MULTIPOLYGON")
+
+cd <- st_read("cd") %>% 
+  st_cast("MULTIPOLYGON")
+
+# get biz data 
+biz <- fread("https://data.cityofnewyork.us/resource/p2mh-mrfv.csv?$limit=999999")
+
+# subset down 
+biz_sub <- biz[license_type %in% "Business" & license_status %in% "Active", ]
+biz_loc <- biz_sub[location != "", ]
+biz_loc[, BBL := as.numeric(bbl)]
+
+# join 
+biz_shps <- biz_loc %>%
+  left_join(tax_lots, by = "BBL") 
+setDT(biz_shps)
+
+biz_shps[, nbiz := .N, by = CD]
+biz_shps[, boro_cd := CD]
+biz_shps <- biz_shps[, .(boro_cd, nbiz)]
+biz_shps <- unique(biz_shps)
+biz_shps <- as.data.frame(biz_shps)
+
+biz_shps <-  biz_shps  %>%
+  left_join(cd, by = "boro_cd") %>% 
+  st_as_sf() %>% 
+  st_transform('+proj=longlat +datum=WGS84') 
+
+pal = colorNumeric(
+  palette = "Blues",
+  domain = biz_shps$nbiz, 
+  na.color = "Black", 
+  reverse = FALSE
+)
+
+
+cd_biz <- leaflet(biz_shps) %>% 
+  addProviderTiles("CartoDB") %>% 
+  addPolygons(weight = .5,
+              fillColor = ~pal(nbiz), 
+              popup = paste(biz_shps$nbiz, biz_shps$boro_cd), 
+              stroke = TRUE, 
+              fillOpacity = .9) %>% 
+  addLegend(pal = pal, 
+            values = biz_shps$nbiz) 
+  
+hist(biz_shps$nbiz)
+
+```
+
