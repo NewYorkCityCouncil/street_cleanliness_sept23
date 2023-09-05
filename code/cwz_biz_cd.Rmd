@@ -20,8 +20,8 @@ tax_lots <- st_read("shapes/MapPLUTO.shp") %>%
               dTolerance = 100) %>%
   st_cast("MULTIPOLYGON")
 
-cd <- st_read("cd") %>% 
-  st_cast("MULTIPOLYGON")
+# cd <- st_read("cd") %>% 
+#   st_cast("MULTIPOLYGON")
 
 # get biz data 
 biz <- fread("https://data.cityofnewyork.us/resource/p2mh-mrfv.csv?$limit=999999")
