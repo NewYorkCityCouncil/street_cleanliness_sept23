@@ -1,0 +1,42 @@
+---
+title: "Overflowing Litter Baskets"
+output: html_document
+date: "2023-09-05"
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(vroom)
+library(leaflet)
+library(leaflet.extras)
+library(janitor)
+library(data.table)
+library(zoo)
+library(councildown)
+```
+
+```{r}
+setDT(dsny_311)
+dsny_311[, created_date := as.Date(created_date)][, yr := year(created_date)][, mo := month(created_date)]
+dsny_311[, date_ym:=as.yearmon(created_date)]
+```
+
+```{r}
+olb <- dsny_311[dsny_311$complaint_type == "Overflowing Litter Baskets",]
+orb <- dsny_311[dsny_311$complaint_type == "Overflowing Recycling Baskets",]
+o_lr_b <- dsny_311[dsny_311$complaint_type %in% c("Overflowing Litter Baskets", "Overflowing Recycling Baskets"),]
+```
+
+```{r}
+# ---- Overflowing litter baskets over time: table
+olb_time <- olb %>% group_by(date_ym) %>% summarise(n_comp=n())
+o_lr_b_time <- o_lr_b %>% group_by(complaint_type,date_ym) %>% summarise(n_comp=n())
+o_lr_b_time
+```
+
+```{r}
+ggplot(o_lr_b_time, aes(x= date_ym, y=n_comp, col=complaint_type)) + geom_line() + labs(x="Date", y="Number of Complaints", title="311 Data on Overflowing Litter Basket Complaints Over Time", subtitle="Jan 2018 - Aug 2021") + theme_nycc() 
+```
+
