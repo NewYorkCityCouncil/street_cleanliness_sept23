@@ -6,6 +6,7 @@ library(councilverse)
 
 # biz data ----------------------------------------------------------------
 biz <- fread("https://data.cityofnewyork.us/resource/p2mh-mrfv.csv?$limit=999999")
+
 # subset down 
 biz_sub <- unique(biz[license_type %in% "Business" & license_status %in% "Active" & !location %in% "", 
                       .(industry, location, bbl = as.character(bbl), cd=council_district)])
@@ -30,34 +31,49 @@ biz_cmpts <- merge(biz_sub, dsdt, by = "bbl")
 biz_cmpts[, n_cmpts := .N, by = "cd"]
 
 # normalize by number of complaints by n biz/cd
-biz_cmpts[, n_cmpts_p_biz := n_cmpts/n_biz_cd]
+biz_cmpts[, n_cmpts_p_biz := round(n_cmpts/n_biz_cd, 2)]
 
 # let's subset and join w cd sf
 mapdt <- unique(biz_cmpts[, .(cd, n_cmpts, n_cmpts_p_biz)])
-cd <- read_sf("~/housing_buildings/data/city_council_shp/") %>% 
+
+# cds
+url <- "https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nycc_22c.zip"
+cd_shp <- unzip_sf(url)
+
+cd <- read_sf(cd_shp) %>% 
   st_transform('+proj=longlat +datum=WGS84')
 
 cd_biz <- cd %>% 
-  left_join(mapdt, by = c("coun_dist" = "cd")) %>% 
+  left_join(mapdt, by = c("CounDist" = "cd")) %>% 
   st_as_sf() %>% 
   st_transform('+proj=longlat +datum=WGS84')
 
+ggplot(cd_biz, aes(x = n_cmpts_p_biz)) + geom_histogram() + 
+  theme_bw()
 
 # map dsny complaints/biz -------------------------------------------------
-int_cd_pts <-
-  classInt::classIntervals(cd_biz$, n = 7, style = "headtails")
+int_cd_biz <-
+  classInt::classIntervals(cd_biz$n_cmpts_p_biz, n = 7, style = "headtails")
 
-pal_pts = leaflet::colorBin(
+pal_biz = leaflet::colorBin(
   # issues with councildown's colorBin
-  palette = c('#ffd8d8', '#eeb6b1', '#db958b', '#c67466', '#b05344', '#993123', '#800000'),
-  bins = int_cd_pts$brks,
-  domain = round(points$pct_chg, 2),
+  palette = c("#660000","#1850b5","#ba9f64","#1f3a70","#b3b3ff","#af6d46","#666666"),
+  bins = int_cd_biz$brks,
+  domain = round(cd_biz$n_cmpts_p_biz, 2),
   na.color = "White",
-  reverse = FALSE
+  reverse = TRUE
 )
 
-leaflet()
-
+leaflet() %>% 
+  addCouncilStyle(add_dists = TRUE) %>% 
+  leaflet::addPolygons(data=cd_biz, 
+                       fillColor = ~pal_biz(n_cmpts_p_biz), 
+                       label = ~paste0(n_cmpts_p_biz), 
+                       opacity = 0) %>% 
+  addLegend(pal = pal_biz, 
+            values = int_cd_biz$brks, 
+            position = "topleft", 
+            title = "Complaints per Business by <br/> Council District")
 
 
 # load commercial waste zone boundaries -----------------------------------
