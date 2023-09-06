@@ -64,7 +64,7 @@ pal_biz = leaflet::colorBin(
   reverse = TRUE
 )
 
-leaflet() %>% 
+m_biz <- leaflet() %>% 
   addCouncilStyle(add_dists = TRUE) %>% 
   leaflet::addPolygons(data=cd_biz, 
                        fillColor = ~pal_biz(n_cmpts_p_biz), 
@@ -74,6 +74,9 @@ leaflet() %>%
             values = int_cd_biz$brks, 
             position = "topleft", 
             title = "Complaints per Business by <br/> Council District")
+
+
+mapview::mapshot(m_biz, "visuals/dsny_biz_cmplts_2022-sept2023.html")
 
 
 # load commercial waste zone boundaries -----------------------------------
