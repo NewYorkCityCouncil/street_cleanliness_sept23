@@ -38,10 +38,16 @@ bigbizdt[, n_biz_cd := .N, by = .(cd)]
 dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2022-01-01'&$limit=999999999999")
 dsny_311[, bbl := as.character(bbl)]
 dsny_comps <- dsny_311[complaint_type %in% c("Commercial Disposal Complaint", "Retailer Complaint", "Dirty Condition") & 
-                         location_type %in% c("Sidewalk", "Street"), ]
+                         location_type %in% c("Sidewalk", "Street") & !latitude %in% NA, ]
+
+
 dsdt <- unique(dsny_comps[, .(descriptor, complaint = complaint_type, location_type, 
                               date = as.Date(created_date), bbl = as.character(bbl))])
 
+ds_litter <- dsny_311[complaint_type %in% "Litter Basket Complaint", ]
+ds_litter_sub <- ds_litter[!resolution_description %in% 
+                             c("The Department of Sanitation investigated this complaint and found no violation at the location.", 
+                               "The Department of Sanitation investigated this complaint and found no condition at the location."), ]
 # join biz w complaints
 vsd_dsny <- merge(bigbizdt, dsdt, by = "bbl")
 vsd_dsny[, n_cmpts := .N, by = .(cd)]
