@@ -94,7 +94,7 @@ plot <- ggplot(ds, aes(x=month, y=total)) +
 
 tooltip_css <- "background-color:#CACACA;"
 plot_interactive <- girafe(ggobj = plot, # formatting for all
-               width_svg = 10, height_svg = 9,
+               width_svg = 10, height_svg = 6,
                options = list(
                  opts_tooltip(
                    opacity = 0.8, #opacity of the background box 
@@ -103,7 +103,7 @@ plot_interactive <- girafe(ggobj = plot, # formatting for all
                  opts_hover(css = "stroke-width: 4; opacity: 1;")
                ))
 
-save_html(plot_interactive, "visuals/oath_dirty_sidewalk.html")
+htmltools::save_html(plot_interactive, "visuals/oath_dirty_sidewalk.html")
 
 ## illegal dumping alone----
 df <- cat_monthly_trend %>% filter(category=="Illegal Dumping")
@@ -120,10 +120,10 @@ plot <- ggplot(df, aes(x=month, y=total)) +
 
 tooltip_css <- "background-color:#CACACA;"
 plot_interactive <- girafe(ggobj = plot, # formatting for all
-                           width_svg = 10, height_svg = 7,
+                           width_svg = 10, height_svg = 6,
                            options = list(
                              opts_tooltip(
-                               opacity = 1, #opacity of the background box 
+                               opacity = 0.8, #opacity of the background box 
                                css = "background-color:#4c6061; color:white; padding:10px; border-radius:5px;"),
                              opts_hover_inv(css = "stroke-width: 1;opacity:0.6;"),
                              opts_hover(css = "stroke-width: 4; opacity: 1;")
@@ -146,10 +146,10 @@ plot <- ggplot(df, aes(x=month, y=total)) +
 
 tooltip_css <- "background-color:#CACACA;"
 plot_interactive <- girafe(ggobj = plot, # formatting for all
-                           width_svg = 10, height_svg = 7,
+                           width_svg = 10, height_svg = 6,
                            options = list(
                              opts_tooltip(
-                               opacity = 1, #opacity of the background box 
+                               opacity = 0.8, #opacity of the background box 
                                css = "background-color:#4c6061; color:white; padding:10px; border-radius:5px;"),
                              opts_hover_inv(css = "stroke-width: 1;opacity:0.6;"),
                              opts_hover(css = "stroke-width: 4; opacity: 1;")
