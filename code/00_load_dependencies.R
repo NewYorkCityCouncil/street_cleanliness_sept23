@@ -6,7 +6,8 @@
 #' IF YOU DO NOT WANT TO INSTALL ANY OF THESE PACKAGES, DO NOT RUN THIS CODE.
 
 list.of.packages <- c("tidyverse", "janitor", "vroom", "data.table", "leaflet", "sf", "ggplot2", "stringr", "skimr", "lubridate", "mapview",
-                      "ggiraph",'htmltools', 'gt', 'gtExtras')
+                      "ggiraph",'htmltools', 'gt', 'gtExtras',
+                      'classInt')
 
 # checks if packages has been previously installed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]

@@ -156,10 +156,11 @@ plot_interactive <- girafe(ggobj = plot, # formatting for all
                            ))
 
 save_html(plot_interactive, "visuals/oath_abandoning_vehicle.html")
-## diriest sidewalk table -----
+## dirtiest sidewalk table -----
+# normalized
 plot <- lion_vios %>% 
   slice_max(vios_per_length, n=10) %>% 
-  select(full_address, vios_per_length) %>% 
+  select(full_address, vios_per_length, total) %>% 
   gt() %>%
   tab_header(
     title = "Streets with the Highest Number of Dirty Sidewalk Violations Per Foot",
@@ -171,6 +172,7 @@ plot <- lion_vios %>%
 
 plot %>% gtsave("visuals/dirtiest_streets.html")
 
+#raw count
 plot1 <- lion_vios %>% slice_max(total, n=10) %>% 
   select(full_address, total) %>% 
   gt() %>%
@@ -181,3 +183,68 @@ plot1 <- lion_vios %>% slice_max(total, n=10) %>%
   #  tab_source_note(source_note = "") %>%
   gt_theme_nytimes() %>% 
   tab_options(column_labels.font.weight = "160px")
+
+## dirtiest sidewalk map ---------
+
+#plot(density(lion_vios$vios_per_length))
+#extremely skewed - 
+
+ints <- classIntervals(lion_vios$vios_per_length, n = 3, 
+                      style = 'maximum', cutlabels=F)
+
+pal_street <-  leaflet::colorBin(
+  palette = c('#FFFFFF','#EEB6B1','#C67466','#800000'),
+  bins = ints$brks,
+  domain = lion_vios$vios_per_length,
+  na.color = "#FFFFFF"
+)
+
+# fix multicurve issue 
+# reference: https://github.com/r-spatial/sf/issues/2203#issuecomment-1634794519
+fix_geom<-lion_vios[grepl("list\\(list",lion_vios$id)==T,]
+fixed=c()
+for(i in 1:dim(fix_geom)[1]){
+  fix_geom$SHAPE[i]=st_cast(fix_geom$SHAPE[i], "MULTILINESTRING")
+}
+
+lion_vios.shp <- lion_vios %>% 
+  filter(grepl("list\\(list",id)==F) %>% #drop the multicurve rows
+  bind_rows(fix_geom) %>%  #add the multicurve rows fixed to multistring
+  mutate(bin = case_when(vios_per_length<=ints$brks[2] ~ "#FFD8D8",
+                         vios_per_length>ints$brks[2] &
+                           vios_per_length<=ints$brks[3] ~"#EEB6B1",
+                         vios_per_length>ints$brks[3] &
+                           vios_per_length<=ints$brks[4] ~ "#C67466",
+                         vios_per_length>ints$brks[4]~ "#800000"),
+         size = case_when(bin == '#FFD8D8' ~ 2,
+                          bin == '#EEB6B1' ~ 3,
+                          bin == '#C67466' ~ 4,
+                          bin == '#800000' ~ 5))
+
+# separate each bin level to separate layer?
+
+# make points for the top ten worst
+top99975 <- lion_vios %>% 
+  filter(vios_per_length>=3.59512) %>% 
+  st_as_sf() %>% st_centroid()
+
+map <- leaflet() %>% 
+  #addCouncilStyle(add_dists = T) %>% 
+  # addCircleMarkers(data= top10, stroke = F,
+  #                  fillColor = pal_nycc("cool")[7],
+  #                  radius = 5,
+  #                  weight = 3,
+  #                  fillOpacity = 0.7) %>% 
+  addPolylines(data= lion_vios.shp,
+               opacity = 1,
+               weight = lion_vios.shp$size,
+               color = ~lion_vios.shp$bin,
+               popup = paste("<h4>",lion_vios.shp$full_address,"<hr>",
+                             "<small>Violations Per Foot: </small>",
+                             lion_vios.shp$vios_per_length,
+                             "<br>",
+                             "<small>Street Length: </small>", 
+                             lion_vios.shp$SHAPE_Length,
+                             "<br>",
+                             "<small>Total Violations: </small>",
+                             lion_vios.shp$total)) 

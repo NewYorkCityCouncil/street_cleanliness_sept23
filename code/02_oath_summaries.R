@@ -29,19 +29,21 @@ pad_vios <- all_vios_bbl %>% filter(month >='08-01-22') %>%
   group_by(segid) %>% summarise(total = sum(total, na.rm = T))
 
 # unzipped from 'https://data.cityofnewyork.us/download/2v4z-66xt/application%2Fx-zip-compressed'
-lion <- read_sf("lion/lion.gdb", "lion")
+lion <- read_sf("lion/lion.gdb", "lion") %>%  st_as_sf() %>% 
+  st_cast("MULTILINESTRING") %>% 
+  st_transform("+proj=longlat +datum=WGS84") 
 
 # check & clean subset
-lion_bit <- lion[, c(1,3, 25:26, 79:82, 98:105,116:117,128)] %>% 
-  st_transform("+proj=longlat +datum=WGS84") 
+lion_bit <- lion[, c(1,3, 25:26, 79:82, 98:105,116:117,128)] 
 
 lion_bit_clean <- lion_bit %>% 
   mutate(id= paste0(Street,SegmentID, SegCount,XFrom, YFrom, SHAPE)) %>% 
   filter(!duplicated(id)) # some issue with distinct
 
-# join violations to street segments, keep violations that matched
-lion_vios <- pad_vios %>% 
-  inner_join(lion_bit_clean, by= c('segid'='SegmentID')) %>% 
+# join violations to street segments, remove streets with no violations
+lion_vios <- lion_bit_clean %>% 
+   left_join(pad_vios, by= c('SegmentID'='segid'), keep = T) %>% 
+   filter(!is.na(segid) & total!=0) %>% 
   mutate(vios_per_length = total/SHAPE_Length,
          LLo_Hyphen = trimws(LLo_Hyphen, 'both'),
          LHi_Hyphen = trimws(LHi_Hyphen, 'both'),
