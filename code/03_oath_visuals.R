@@ -162,8 +162,8 @@ plot <- lion_vios %>%
   select(full_address, vios_per_length) %>% 
   gt() %>%
   tab_header(
-    title = "Streets with the Highest Number of Dirty Sidewalk Violations",
-    subtitle = "Segements per Foot"
+    title = "Streets with the Highest Number of Dirty Sidewalk Violations Per Foot",
+    subtitle = "Year to Date (August 2022-Present)"
   ) %>%
   #  tab_source_note(source_note = "") %>%
   gt_theme_nytimes() %>% 
@@ -175,8 +175,8 @@ plot1 <- lion_vios %>% slice_max(total, n=10) %>%
   select(full_address, total) %>% 
   gt() %>%
   tab_header(
-    title = "Streets with the Highest Number of Dirty Sidewalk Violations",
-    subtitle = "Segements per Foot"
+    title = "Streets with the Highest Number of Dirty Sidewalk Violations Per Foot",
+    subtitle = "Year to Date (August 2022-Present)"
   ) %>%
   #  tab_source_note(source_note = "") %>%
   gt_theme_nytimes() %>% 
