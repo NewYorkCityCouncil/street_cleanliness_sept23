@@ -4,56 +4,122 @@ author: "Brook Frye"
 date: "9/4/2019"
 output: html_document
 ---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+source("~/utils/00_load_dependencies.R")
+source("code/biz_dsny_complaints_2023.R")
 
-```{r echo=FALSE}
-# let's read in all the businesses 
-library(data.table)
-library(sf)
-library(leaflet)
-library(dplyr)
-library(stringr)
+# use bizdt bizshp for the merged business/complaint data
+```
 
-# cd <- read_sf("Community Districts")
-# read in shape files 
-tax_lots <- st_read("shapes/MapPLUTO.shp") %>%
-  st_simplify(preserveTopology = TRUE,
-              dTolerance = 100) %>%
-  st_cast("MULTIPOLYGON")
+#### Map of DSNY complaints related to businesses from 2022 - present. Includes the following complaint types for streets and sidewalks:
+- Commercial Disposal Complaint 
+- Retailer Complaint
+- Dirty Condition
 
-# cd <- st_read("cd") %>% 
-#   st_cast("MULTIPOLYGON")
+*** 
 
-# get biz data 
-biz <- fread("https://data.cityofnewyork.us/resource/p2mh-mrfv.csv?$limit=999999")
+##### We are sourcing business data from:
+- [Vacant storefront registration](https://data.cityofnewyork.us/City-Government/Storefronts-Reported-Vacant-or-Not/92iy-9c3n)
+- [DCA licenses](https://nycopendata.socrata.com/Business/Legally-Operating-Businesses/w7w3-xahh/data)
 
-# subset down 
-biz_sub <- biz[license_type %in% "Business" & license_status %in% "Active", ]
-biz_loc <- biz_sub[location != "", ]
-biz_loc[, BBL := as.numeric(bbl)]
+```{r}
 
-# join 
-biz_shps <- biz_loc %>%
-  left_join(tax_lots, by = "BBL") 
-setDT(biz_shps)
+int_cd_biz <-
+  classInt::classIntervals(cd_biz$n_cmpts_p_biz, n = 6)
 
-biz_shps[, nbiz := .N, by = CD]
-biz_shps[, boro_cd := CD]
-biz_shps <- biz_shps[, .(boro_cd, nbiz)]
-biz_shps <- unique(biz_shps)
-biz_shps <- as.data.frame(biz_shps)
-
-biz_shps <-  biz_shps  %>%
-  left_join(cd, by = "boro_cd") %>% 
-  st_as_sf() %>% 
-  st_transform('+proj=longlat +datum=WGS84') 
-
-pal = colorNumeric(
-  palette = "Blues",
-  domain = biz_shps$nbiz, 
-  na.color = "Black", 
+pal_biz = leaflet::colorBin(
+  # issues with councildown's colorBin
+  palette = c("#b3b3ff","#1850b5","#1f3a70","#ba9f64","#af6d46","#660000"),
+  bins = int_cd_biz$brks,
+  domain = round(cd_biz$n_cmpts_p_biz, 2),
+  na.color = "White",
   reverse = FALSE
 )
 
+m_biz <- leaflet() %>% 
+  addCouncilStyle(add_dists = TRUE) %>% 
+  leaflet::addPolygons(data=cd_biz, 
+                       fillColor = ~pal_biz(n_cmpts_p_biz), 
+                       label = ~paste0(n_cmpts_p_biz), 
+                       opacity = 0) %>% 
+  addLegend(pal = pal_biz, 
+            values = int_cd_biz$brks, 
+            position = "topleft", 
+            title = "Complaints per Business by <br/> Council District")
+
+
+mapview::mapshot(m_biz, "visuals/dsny_biz_cmplts_2022-sept2023.html")
+```
+
+##### Litter basket inventory
+- overflowing litter basket complaints
+- worst litter baskets
+
+```{r}
+lburl <- "https://data.cityofnewyork.us/api/geospatial/8znf-7b2c?accessType=DOWNLOAD&method=export&format=Shapefile"
+lbz <- unzip_sf(lburl)
+lbsf <- st_read(lbz) %>% 
+  st_transform('+proj=longlat +datum=WGS84' )
+
+ds_litter_sub %>% 
+  st_as_sf(coords = c("longitude", "latitude"))
+  
+leaflet() %>% 
+  addCouncilStyle(add_dists = TRUE) %>% 
+  leaflet::addCircles(data=lbsf$geometry, 
+                      opacity = .2)
+```
+
+
+#### Scorecard - Street Cleanliness
+- by DSNY sections via 
+```{r}
+url <- "https://data.cityofnewyork.us/api/geospatial/7vgu-qbur?accessType=DOWNLOAD&method=export&format=Shapefile"
+file <- unzip_sf(url)
+ds_sects <- st_read(file)
+
+sc <- fread("https://data.cityofnewyork.us/api/views/rqhp-hivt/rows.csv?accessType=DOWNLOAD")
+# sc[, cleaning_section := as.character(cleaning_section)]
+sc$year <- unlist(lapply(strsplit(sc$Month, " ", fixed = TRUE), "[[", 1))
+sc$month <- unlist(lapply(strsplit(sc$Month, " ", fixed = TRUE), "[[", 3))
+
+sc_sub <- sc[year %in% "2023" & month %in% "07", ]
+
+sc_sf <- ds_sects %>% 
+  left_join(sc_sub, by = c("section" = "Cleaning Section")) %>% 
+  st_as_sf() %>% 
+  st_transform('+proj=longlat +datum=WGS84')
+```
+
+
+```{r}
+# map dirty zones 
+pal <- leaflet::colorNumeric(palette = c("#b3b3ff","#1850b5","#1f3a70","#ba9f64","#af6d46","#660000"), 
+                         domain = sc_sf$`Acceptable Sidewalks %`, 
+                         na.color = "White")
+
+unique(pal(sc_sf$`Acceptable Sidewalks %`))
+
+leaflet() %>% 
+  addCouncilStyle(add_dists = TRUE) %>% 
+  leaflet::addPolygons(data=sc_sf, 
+                       color = ~pal(`Acceptable Sidewalks %`), 
+                       fillColor = ~pal(`Acceptable Sidewalks %`), 
+                       label = ~paste0(`Acceptable Sidewalks %`), 
+                       opacity = 0, 
+                       fillOpacity = .2) #%>% 
+  addLegend(pal = pal, 
+            values = sc_sf$`Acceptable Streets %`, 
+            position = "topleft", 
+            title = "Complaints per Business by <br/> Council District")
+
+```
+
+
+```{r}
+
+# commercial waste zones
 
 cd_biz <- leaflet(biz_shps) %>% 
   addProviderTiles("CartoDB") %>% 
@@ -64,8 +130,5 @@ cd_biz <- leaflet(biz_shps) %>%
               fillOpacity = .9) %>% 
   addLegend(pal = pal, 
             values = biz_shps$nbiz) 
-  
-hist(biz_shps$nbiz)
-
 ```
 
