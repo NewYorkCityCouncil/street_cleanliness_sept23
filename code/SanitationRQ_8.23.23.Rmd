@@ -56,7 +56,7 @@ od_dl <- dsny_311
 ```{r}
 # let's group in a sensible way to reduce categories
 od_dl[complaint_type %in% "Missed Collection (All Materials)", complaint_type := "Missed Collection"]
-od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition"), complaint_type := "Dirty Conditions"]
+od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition", "Dirty Conditions"), complaint_type := "Dirty Conditions"]
 od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Sanitation Condition")]
 ```
 
