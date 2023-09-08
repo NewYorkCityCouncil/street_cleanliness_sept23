@@ -156,3 +156,28 @@ plot_interactive <- girafe(ggobj = plot, # formatting for all
                            ))
 
 save_html(plot_interactive, "visuals/oath_abandoning_vehicle.html")
+## diriest sidewalk table -----
+plot <- lion_vios %>% 
+  slice_max(vios_per_length, n=10) %>% 
+  select(full_address, vios_per_length) %>% 
+  gt() %>%
+  tab_header(
+    title = "Streets with the Highest Number of Dirty Sidewalk Violations",
+    subtitle = "Segements per Foot"
+  ) %>%
+  #  tab_source_note(source_note = "") %>%
+  gt_theme_nytimes() %>% 
+  tab_options(column_labels.font.weight = "160px")
+
+plot %>% gtsave("visuals/dirtiest_streets.html")
+
+plot1 <- lion_vios %>% slice_max(total, n=10) %>% 
+  select(full_address, total) %>% 
+  gt() %>%
+  tab_header(
+    title = "Streets with the Highest Number of Dirty Sidewalk Violations",
+    subtitle = "Segements per Foot"
+  ) %>%
+  #  tab_source_note(source_note = "") %>%
+  gt_theme_nytimes() %>% 
+  tab_options(column_labels.font.weight = "160px")
