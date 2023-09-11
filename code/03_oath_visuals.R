@@ -182,16 +182,25 @@ plot_interactive <- girafe(ggobj = plot, # formatting for all
 save_html(plot_interactive, "visuals/oath_abandoning_vehicle.html")
 ## dirtiest sidewalk table -----
 # normalized
-plot <- lion_vios %>% 
-  slice_max(vios_per_length, n=10) %>% 
-  select(full_address, vios_per_length, total, SHAPE_Length) %>% 
-  st_drop_geometry() %>% 
-  mutate(vios_per_length = round(vios_per_length,1),
-         SHAPE_Length = round(SHAPE_Length,1)) %>% 
+df <- lion_vios1 %>% 
+  arrange(desc(vios_per_bbl)) %>%  ungroup() %>% as.data.frame() %>% 
+  select(full_address, boro,vios_per_bbl, total, n)  %>% 
+  mutate(vios_per_bbl = round(vios_per_bbl,1),
+  boro = case_when(
+    boro == 3 ~ "BROOKLYN" , 
+    boro ==  4 ~ "QUEENS", 
+    boro ==  2 ~ "BRONX", 
+    boro ==  1 ~ "MANHATTAN", 
+    boro ==  5 ~ "STATEN ISLAND"
+  ))
+df <- df[1:20,] #slice was not working??
+names(df) <- c("Address", "Borough", "Violations Per Propery", "Total # Violations", "Total # Properies")
+
+plot <- df %>% 
   gt() %>%
   tab_header(
-    title = "Streets with the Highest Number of Dirty Sidewalk Violations Per Foot",
-    subtitle = "Year to Date (August 2022-Present)"
+    title = "Streets with the Highest Number of Dirty Sidewalk Violations",
+    subtitle = "Year to Date (August 2022 - August 2023)"
   ) %>%
   #  tab_source_note(source_note = "") %>%
   gt_theme_nytimes() %>% 
