@@ -47,42 +47,24 @@ ggplot(to_all_vios_mon, aes(x=ymd(month), y=violations,
 
 # monthly trend all categories -----
 
-monthly_trend <- all_vios %>% 
-  group_by(month) %>% count(name = 'total') %>% ungroup() %>% 
-  mutate(category = rep("All Violations", nrow(.)))
 
+## YTD total all categories bar chart ------
+# plot
 cat_monthly_trend <- all_vios %>% 
   mutate(category= case_when(category=='Littering' ~ 'dirty sidewalk',
                              TRUE ~ category)) %>% 
+  filter(month >= '2022-08-01' & month < '2023-09-01') %>% 
   group_by(month, category) %>% count(name = 'total') %>% 
   arrange(desc(total)) %>% 
   mutate(category = factor(category, 
-                           levels=names(sort(table(all_vios$category), decreasing = T))))
+                           levels=names(sort(table(category), decreasing = T))))
 
-together <-rbind(monthly_trend, cat_monthly_trend)
-
-# reshape to do facet
-monthly_trend <- monthly_trend %>% 
-  left_join(cat_monthly_trend, by=c('month')) %>% 
-  select(-category.x) %>% 
-  mutate(percent = round((total.y / total.x) *100))
-
-ggplot(cat_monthly_trend, aes(x=month, y=total, 
-                            group = category, color=category)) +
-  geom_point() +
-  geom_smooth(se=F, span=0.25) +
-  facet_wrap(. ~ category) +
-  #geom_line() +
-  scale_x_date(date_labels = "%m-%Y", breaks = "6 months") +
-  theme_nycc() +
-  #scale_color_nycc() +
-  ggtitle("Related Sanitation Vs All Oath Violations", "Monthly Trend")
-
-## YTD total all categories bar chart
-# plot
 bar_cat_vios <- cat_monthly_trend %>% 
-  filter(month>=2022-09-01) %>% group_by(category) %>% 
-  summarize(total=sum(total))
+  group_by(category) %>% 
+  summarize(total=sum(total)) %>% 
+  mutate(category = toupper(category))
+
+write_csv(bar_cat_vios, "data/output/oath_ytd_categories.csv")
 
 plot <- 
   bar_cat_vios %>% 
@@ -202,7 +184,10 @@ save_html(plot_interactive, "visuals/oath_abandoning_vehicle.html")
 # normalized
 plot <- lion_vios %>% 
   slice_max(vios_per_length, n=10) %>% 
-  select(full_address, vios_per_length, total) %>% 
+  select(full_address, vios_per_length, total, SHAPE_Length) %>% 
+  st_drop_geometry() %>% 
+  mutate(vios_per_length = round(vios_per_length,1),
+         SHAPE_Length = round(SHAPE_Length,1)) %>% 
   gt() %>%
   tab_header(
     title = "Streets with the Highest Number of Dirty Sidewalk Violations Per Foot",
@@ -231,22 +216,6 @@ plot1 <- lion_vios %>% slice_max(total, n=10) %>%
 #plot(density(lion_vios$vios_per_length))
 #extremely skewed - 
 # making custom bins   
-# ints <- classIntervals(lion_vios$vios_per_length, n = 5, 
-#                       style = 'maximum', cutlabels=F)
-# 
-pal_street <-  leaflet::colorBin(
-  palette = c('#EEB6B1','#C67466','#993123','#800000'),
-  bins = c(0,1,4,9,max(lion_vios$vios_per_length)),
-  domain = lion_vios$vios_per_length,
-  na.color = "#FFFFFF"
-)
-
-pal_legend <- leaflet::colorFactor(
-  palette = c('#EEB6B1','#C67466','#993123','#800000'),
-  #bins = c(0,1,4,9,max(lion_vios$vios_per_length)),
-  domain = lion_vios$vios_per_length,
-  na.color = "#FFFFFF"
-)
 
 # fix multicurve issue 
 # reference: https://github.com/r-spatial/sf/issues/2203#issuecomment-1634794519
@@ -259,6 +228,15 @@ for(i in 1:dim(fix_geom)[1]){
 # bin cut offs based on quantiles
 cut_996 <- quantile(lion_vios.shp$vios_per_length,.996)
 # 0%-99.5% of streets : < 1 violation per 1ft of a street's length
+
+pal_street <-  leaflet::colorBin(
+  palette = c('#EEB6B1','#C67466','#993123','#800000'),
+  bins = c(0,1,4,9,max(lion_vios$vios_per_length)),
+  domain = lion_vios$vios_per_length,
+  na.color = "#FFFFFF"
+)
+
+# map
 
 lion_vios.shp <- lion_vios %>% 
   filter(grepl("list\\(list",id)==F) %>% #drop the multicurve rows
@@ -275,12 +253,6 @@ lion_vios.shp <- lion_vios %>%
                           bin =='#800000' ~ 6.5) )
 
 
-
-
-# make points for the top ten worst
-top99975 <- lion_vios %>% 
-  filter(vios_per_length>=3.59512) %>% 
-  st_as_sf() %>% st_centroid()
 
 map <- leaflet() %>% 
   # leaflet(options = leafletOptions(minZoom = 11, maxZoom = 13,

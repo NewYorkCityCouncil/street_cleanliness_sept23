@@ -15,7 +15,8 @@ all_vios_bbl <- all_vios %>%
   mutate(bbl = as.numeric(bbl) ) %>% 
   left_join(pluto, by = c('bbl')) %>% 
   filter(is.na(latitude)==F) #remove non-matching bbls/ na latitudes for mapping 
-  
+
+##### add littering !!!!!!!!!!!!! ---------
 # year to date total  filtered to dirty sidewalk only
 pad_vios <- all_vios_bbl %>% filter(month >='08-01-22') %>% 
   filter(category=="dirty sidewalk") %>% 
