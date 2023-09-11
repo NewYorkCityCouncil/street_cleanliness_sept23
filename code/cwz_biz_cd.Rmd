@@ -60,44 +60,17 @@ mapview::mapshot(m_biz, "visuals/dsny_biz_cmplts_2022-sept2023.html")
 
 ```{r}
 
-library(nngeo)
 
-# get litter basket locations, buffer and create polygon
-lburl <- "https://data.cityofnewyork.us/api/geospatial/8znf-7b2c?accessType=DOWNLOAD&method=export&format=Shapefile"
-lbz <- unzip_sf(lburl)
-lb_points_buf <- st_read(lbz) %>%
-  st_buffer(dist = 10) %>% 
-  st_cast("MULTIPOLYGON")
-
-# litterbasket complaints points, make sf
-lbc_points <- ds_litter_sub %>% 
-  st_as_sf(wkt = "location", crs = 4326) %>% 
-  st_transform('+proj=longlat +datum=WGS84') 
-
-lb_points_buf <- lb_points_buf %>% st_transform('+proj=longlat +datum=WGS84')
-
-
-fsub <- st_filter(lb_points_buf, lbc_points)
-fsub %>% group_by(geometry) %>% 
-  summarise(n=length(unique(basketid)))
-
-
-
-# lcnn <- st_nn(lb_points, lbc_points, k=1000, maxdist = 10, returnDist = TRUE)
-# test <- data.table(id = c(1:length(lcnn$nn)), distnc = lcnn$dist, comps = lengths(lcnn$nn)>0)
-# test[comps==TRUE, ]
 
 leaflet() %>% 
   addCouncilStyle(add_dists = TRUE) %>% 
-  leaflet::addCircleMarkers(data = f_sub, 
-                      opacity = .5, 
-                      radius = .0,
-                      weight = .05) %>% 
+  leaflet::addCircles(data = lb_points, 
+                      radius = .004) %>% 
   leaflet::addCircles(data = lbc_points, 
-                      color = "Black")
-                      
-                      , 
+                      color = "Black",
                       radius = .005)
+
+# 
 
 
 ```
@@ -145,7 +118,9 @@ dirty_sects <- leaflet() %>%
   addLegend(pal = pal, 
             values = sc_sf$`Acceptable Streets %`, 
             position = "topleft", 
-            title = "Complaints per Business by <br/> Council District")
+            title = "% Acceptable Sidewalks")
+
+mapview::mapshot(dirty_sects, "visuals/dsny_scores_streets_7_2023.html")
 
 ```
 
