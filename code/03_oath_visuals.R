@@ -78,6 +78,48 @@ ggplot(cat_monthly_trend, aes(x=month, y=total,
   #scale_color_nycc() +
   ggtitle("Related Sanitation Vs All Oath Violations", "Monthly Trend")
 
+## YTD total all categories bar chart
+# plot
+bar_cat_vios <- cat_monthly_trend %>% 
+  filter(month>=2022-09-01) %>% group_by(category) %>% 
+  summarize(total=sum(total))
+
+plot <- 
+  bar_cat_vios %>% 
+  ggplot(aes(x = reorder(category,total), 
+             y=total, fill = category)) +
+  geom_col_interactive(width = 0.6,
+                       tooltip = 
+                         paste(bar_cat_vios$category, 
+                               "<br>Violations:", 
+                               round(bar_cat_vios$total))) +
+  
+  coord_flip() +
+  geom_text(show.legend = F, size = 3,
+            label= paste0(round(bar_cat_vios$total, 0), " violations"), 
+            nudge_x = 0, hjust=-0.15) +
+  scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+  ylab("Violations") + xlab("") +
+  labs(title="Citywide Total Sanitation OATH Violations",
+       subtitle = "(Year-to-Date)", 
+       x="",  y="Violations") +
+  theme_nycc()+
+  theme(axis.text.x = element_text(angle = 0, hjust = 1, size = 11),
+        legend.position = "none",
+        axis.text.y = element_text(size = 11))
+
+tooltip_css <- "background-color:#CACACA;"
+
+plot_interactive <- girafe(ggobj = plot,   
+                           width_svg = 6,
+                           height_svg = 5, 
+                           options = list(
+                             opts_tooltip(css = tooltip_css)
+                           )
+)
+
+
+htmltools::save_html(plot_interactive, "visuals/vios_ytd_total_citywide_bar.html")
 
 ## dirty sidewalk alone -------
 
@@ -156,3 +198,124 @@ plot_interactive <- girafe(ggobj = plot, # formatting for all
                            ))
 
 save_html(plot_interactive, "visuals/oath_abandoning_vehicle.html")
+## dirtiest sidewalk table -----
+# normalized
+plot <- lion_vios %>% 
+  slice_max(vios_per_length, n=10) %>% 
+  select(full_address, vios_per_length, total) %>% 
+  gt() %>%
+  tab_header(
+    title = "Streets with the Highest Number of Dirty Sidewalk Violations Per Foot",
+    subtitle = "Year to Date (August 2022-Present)"
+  ) %>%
+  #  tab_source_note(source_note = "") %>%
+  gt_theme_nytimes() %>% 
+  tab_options(column_labels.font.weight = "160px")
+
+plot %>% gtsave("visuals/dirtiest_streets.html")
+
+#raw count
+plot1 <- lion_vios %>% slice_max(total, n=10) %>% 
+  select(full_address, total) %>% 
+  gt() %>%
+  tab_header(
+    title = "Streets with the Highest Number of Dirty Sidewalk Violations Per Foot",
+    subtitle = "Year to Date (August 2022-Present)"
+  ) %>%
+  #  tab_source_note(source_note = "") %>%
+  gt_theme_nytimes() %>% 
+  tab_options(column_labels.font.weight = "160px")
+
+## dirtiest sidewalk map ---------
+
+#plot(density(lion_vios$vios_per_length))
+#extremely skewed - 
+# making custom bins   
+# ints <- classIntervals(lion_vios$vios_per_length, n = 5, 
+#                       style = 'maximum', cutlabels=F)
+# 
+pal_street <-  leaflet::colorBin(
+  palette = c('#EEB6B1','#C67466','#993123','#800000'),
+  bins = c(0,1,4,9,max(lion_vios$vios_per_length)),
+  domain = lion_vios$vios_per_length,
+  na.color = "#FFFFFF"
+)
+
+pal_legend <- leaflet::colorFactor(
+  palette = c('#EEB6B1','#C67466','#993123','#800000'),
+  #bins = c(0,1,4,9,max(lion_vios$vios_per_length)),
+  domain = lion_vios$vios_per_length,
+  na.color = "#FFFFFF"
+)
+
+# fix multicurve issue 
+# reference: https://github.com/r-spatial/sf/issues/2203#issuecomment-1634794519
+fix_geom<-lion_vios[grepl("list\\(list",lion_vios$id)==T,]
+fixed=c()
+for(i in 1:dim(fix_geom)[1]){
+  fix_geom$SHAPE[i]=st_cast(fix_geom$SHAPE[i], "MULTILINESTRING")
+}
+
+# bin cut offs based on quantiles
+cut_996 <- quantile(lion_vios.shp$vios_per_length,.996)
+# 0%-99.5% of streets : < 1 violation per 1ft of a street's length
+
+lion_vios.shp <- lion_vios %>% 
+  filter(grepl("list\\(list",id)==F) %>% #drop the multicurve rows
+  bind_rows(fix_geom) %>%  #add the multicurve rows fixed to multistring
+  mutate(bin = case_when(vios_per_length< 1~ '#EEB6B1', 
+                         vios_per_length>=1 & 
+                           vios_per_length<4 ~ "#C67466",
+                         vios_per_length>=4 &
+                           vios_per_length<9 ~ '#993123',
+                         vios_per_length>=9 ~ "#800000"),
+         size = case_when(bin =='#EEB6B1' ~ 0.5,
+                          bin =='#C67466' ~ 2.5,
+                          bin =='#993123' ~ 6,
+                          bin =='#800000' ~ 6.5) )
+
+
+
+
+# make points for the top ten worst
+top99975 <- lion_vios %>% 
+  filter(vios_per_length>=3.59512) %>% 
+  st_as_sf() %>% st_centroid()
+
+map <- leaflet() %>% 
+  # leaflet(options = leafletOptions(minZoom = 11, maxZoom = 13,
+  #                                  zoomControl = FALSE,
+  #                                  dragging = T)) %>%
+  # addCouncilStyle() %>% not working
+  #leaflet.extras::setMapWidgetStyle(list(background= "white")) %>%
+  addCouncilStyle(add_dists = TRUE, 
+                  highlight_dists = c(9:10,16,18,26,37,3), 
+                  highlight_color = "#800000") %>%
+  addPolylines(data= lion_vios.shp,
+               opacity = 0.6,
+               weight = ~lion_vios.shp$size,
+               color = ~pal_street(vios_per_length),
+               popup = paste("<h4>",lion_vios.shp$full_address,"<hr>",
+                             "<small>Violations Per Foot: </small>",
+                             round(lion_vios.shp$vios_per_length,1),
+                             "<br>",
+                             "<small>Street Length: </small>", 
+                             round(lion_vios.shp$SHAPE_Length),
+                             "<br>",
+                             "<small>Total Violations: </small>",
+                             round(lion_vios.shp$total))) %>% 
+  # addLegend_decreasing(position = "topleft", pal = pal_street, 
+  #                      title = paste0("Violations Per Foot"),  
+  #                      values = c(0, 1), opacity = 1, decreasing = T, 
+  #                      na.label = "NA") %>% 
+  leaflegend::addLegendBin(data = lion_vios.shp,
+    position = "topleft",
+                  pal= pal_street,
+                  shape = "rect",
+                  orientation = "horizontal",
+                  values = lion_vios$vios_per_length,
+                  title = paste("Violations Per Foot",'\n'),
+  numberFormat = function(x) {format(round(x), trim = TRUE,
+           scientific = FALSE)} )
+
+htmlwidgets::saveWidget(map, file="visuals/dirtiest_streets_map.html", selfcontained = T)
