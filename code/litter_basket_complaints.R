@@ -18,9 +18,6 @@ dsny_sub <- dsny_311[!resolution_description %in%
 
 # dsny_sub[grep("litter", complaint_type, ignore.case = T), unique(complaint_type)]
 # subset to categories we want
-business_complaints <- c("Commercial Disposal Complaint", "Retailer Complaint")
-business_locations <- c("Sidewalk", "Street")
-
 litter_complaints <- c("Litter Basket Complaint", "Overflowing Litter Baskets")
 
 lbcomp_sf <- dsny_sub[complaint_type %in% litter_complaints, .(location, unique_key)] %>% 
@@ -40,13 +37,13 @@ lb_points <- st_read(lbzip) %>%
 st_crs(lb_points, parameters = TRUE)$units_gdal 
  
  lb_hex <- lb_points %>% 
-    st_make_grid(cellsize = c(2000, 2000), square = FALSE) %>% # 4000 ft 
+    st_make_grid(cellsize = c(2000, 2000), square = FALSE) %>% # 2000 ft 
     st_sf() %>% # from sfc to sf 
     st_intersection(boro_sf)  %>% 
     st_join(lb_points) %>% 
     mutate(id = row_number())
  
-lb_comp_hex_dt <-  lb_hex %>% 
+lb_comp_hex_dt <- lb_hex %>% 
     st_join(lbcomp_sf) %>%  
   as.data.table()
   
@@ -66,7 +63,7 @@ sub_sf <- lbdt_sub[, .(comps_per_lb, geometry)] %>%
   st_as_sf() %>% 
   st_transform('+proj=longlat +datum=WGS84') 
   
-pal <- leaflet::colorBin(palette = "Blues", domain = unique(sub_sf$n_complts))
+pal <- leaflet::colorBin(palette = "Blues", domain = unique(sub_sf$comps_per_lb))
 
 m_lb <- leaflet() %>% 
   addCouncilStyle(add_dists = TRUE) %>% 
