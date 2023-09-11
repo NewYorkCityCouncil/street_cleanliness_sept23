@@ -202,7 +202,10 @@ save_html(plot_interactive, "visuals/oath_abandoning_vehicle.html")
 # normalized
 plot <- lion_vios %>% 
   slice_max(vios_per_length, n=10) %>% 
-  select(full_address, vios_per_length, total) %>% 
+  select(full_address, vios_per_length, total, SHAPE_Length) %>% 
+  st_drop_geometry() %>% 
+  mutate(vios_per_length = round(vios_per_length,1),
+         SHAPE_Length = round(SHAPE_Length,1)) %>% 
   gt() %>%
   tab_header(
     title = "Streets with the Highest Number of Dirty Sidewalk Violations Per Foot",
@@ -231,22 +234,6 @@ plot1 <- lion_vios %>% slice_max(total, n=10) %>%
 #plot(density(lion_vios$vios_per_length))
 #extremely skewed - 
 # making custom bins   
-# ints <- classIntervals(lion_vios$vios_per_length, n = 5, 
-#                       style = 'maximum', cutlabels=F)
-# 
-pal_street <-  leaflet::colorBin(
-  palette = c('#EEB6B1','#C67466','#993123','#800000'),
-  bins = c(0,1,4,9,max(lion_vios$vios_per_length)),
-  domain = lion_vios$vios_per_length,
-  na.color = "#FFFFFF"
-)
-
-pal_legend <- leaflet::colorFactor(
-  palette = c('#EEB6B1','#C67466','#993123','#800000'),
-  #bins = c(0,1,4,9,max(lion_vios$vios_per_length)),
-  domain = lion_vios$vios_per_length,
-  na.color = "#FFFFFF"
-)
 
 # fix multicurve issue 
 # reference: https://github.com/r-spatial/sf/issues/2203#issuecomment-1634794519
@@ -259,6 +246,15 @@ for(i in 1:dim(fix_geom)[1]){
 # bin cut offs based on quantiles
 cut_996 <- quantile(lion_vios.shp$vios_per_length,.996)
 # 0%-99.5% of streets : < 1 violation per 1ft of a street's length
+
+pal_street <-  leaflet::colorBin(
+  palette = c('#EEB6B1','#C67466','#993123','#800000'),
+  bins = c(0,1,4,9,max(lion_vios$vios_per_length)),
+  domain = lion_vios$vios_per_length,
+  na.color = "#FFFFFF"
+)
+
+# map
 
 lion_vios.shp <- lion_vios %>% 
   filter(grepl("list\\(list",id)==F) %>% #drop the multicurve rows
@@ -275,12 +271,6 @@ lion_vios.shp <- lion_vios %>%
                           bin =='#800000' ~ 6.5) )
 
 
-
-
-# make points for the top ten worst
-top99975 <- lion_vios %>% 
-  filter(vios_per_length>=3.59512) %>% 
-  st_as_sf() %>% st_centroid()
 
 map <- leaflet() %>% 
   # leaflet(options = leafletOptions(minZoom = 11, maxZoom = 13,
