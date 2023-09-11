@@ -194,7 +194,7 @@ df <- lion_vios1 %>%
     boro ==  5 ~ "STATEN ISLAND"
   ))
 df <- df[1:20,] #slice was not working??
-names(df) <- c("Address", "Borough", "Violations Per Propery", "Total # Violations", "Total # Properies")
+names(df) <- c("Address", "Borough", "Violations Per Property", "Total # of Violations", "Total # of Properties")
 
 plot <- df %>% 
   gt() %>%
