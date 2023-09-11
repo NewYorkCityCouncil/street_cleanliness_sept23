@@ -1,31 +1,26 @@
 source("code/00_load_dependencies.R")
 library(councilverse)
+sf_use_s2(FALSE)
+
+b_url <- "https://data.cityofnewyork.us/api/geospatial/tqmj-j8zm?method=export&format=Shapefile"
+boro_zip <- unzip_sf(b_url)
+boro_sf <- st_read(boro_zip) %>%
+  st_as_sf(crs = 4326) %>%
+  st_transform(2263)
 ##
 ## Sanitation Hearing 9/26/23
-## Brook Frye 
+## Brook Frye
 
-# 311 complaints - dirty sidewalk + street complaints about retailers  ----------------------------------------
-dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2022-01-01'&$limit=999999999999")
-dsny_311[, bbl := as.character(bbl)]
-dsny_comps <- dsny_311[complaint_type %in% c("Commercial Disposal Complaint", "Retailer Complaint", "Dirty Condition") & 
-                         location_type %in% c("Sidewalk", "Street"), ]
-
-
-dsdt <- unique(dsny_comps[, .(descriptor, complaint = complaint_type, location_type, 
-                              date = as.Date(created_date), bbl = as.character(bbl))])
-
-ds_litter <- dsny_311[complaint_type %in% "Litter Basket Complaint" & !latitude %in% NA, ]
-ds_litter_sub <- ds_litter[!resolution_description %in% 
-                             c("The Department of Sanitation investigated this complaint and found no violation at the location.", 
-                               "The Department of Sanitation investigated this complaint and found no condition at the location."), ]
+# restaurants -------------------------------------------------------------
+rest <- fread("https://data.cityofnewyork.us/resource/43nn-pn8j.csv?$limit=9999999999")
+rest_sub <- unique(rest[, .(latitude, longitude, bbl = as.character(bbl))])
+rest_sf <- rest_sub[!is.na(latitude), ] %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
 
 # using vacant storefront data & dca data for businesses --------------------------------------------
 vsd <- fread("https://data.cityofnewyork.us/resource/92iy-9c3n.csv?$limit=9999999999")
-# vsd[borough_block_lot %in% "", ]
-vsd_sub <- unique(vsd[, .(bbl = as.character(borough_block_lot), 
-                          biz=primary_business_activity, 
-                          latitude, longitude, 
-                          cd=council_district)])
+vsd_sub <- unique(vsd[, .(bbl = as.character(borough_block_lot),
+                          latitude, longitude)])
 vsd_sf <- vsd_sub[!is.na(latitude), ] %>%
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
 
@@ -33,42 +28,77 @@ vsd_sf <- vsd_sub[!is.na(latitude), ] %>%
 biz <- fread("https://data.cityofnewyork.us/resource/p2mh-mrfv.csv?$limit=999999")
 # subset down 
 biz_sub <- unique(biz[license_type %in% "Business" & license_status %in% "Active" & !location %in% "" &
-                        !bbl %in% vsd_sub$bbl, 
-                      .(biz = industry, 
-                        geometry = location, 
-                        bbl = as.character(bbl), 
-                        cd=council_district)])
-
+                        !bbl %in% vsd_sub$bbl & !bbl %in% 
+                        rest_sub$bbl, 
+                      .(geometry = location, 
+                        bbl = as.character(bbl))])
 biz_sf <-  biz_sub %>% 
-  st_as_sf(wkt="geometry", crs=4326)
+  st_as_sf(wkt="geometry", crs=4326) 
 
 # concat
 big_biz <- rbind(vsd_sf, biz_sf)
-bigbizdt <- as.data.table(big_biz)
-
-bigbizdt[, n_biz_cd := .N, by = .(cd)]
+big_biz2 <- rbind(big_biz, rest_sf)
+bigbiz_sf <- st_as_sf(big_biz2, crs = 4326) %>% 
+  st_transform(2263) 
+  
+# make hex polys 
+ bizhex <-  boro_sf %>% 
+  st_make_grid(cellsize = c(2000, 2000), square = FALSE) %>% # 2000 ft 
+  st_sf() %>% # from sfc to sf 
+  st_intersection(boro_sf)  %>% 
+   mutate(id = row_number()) %>% 
+   st_join(bigbiz_sf) 
 
 # join biz w complaints
-vsd_dsny <- merge(bigbizdt, dsdt, by = "bbl")
-vsd_dsny[, n_cmpts := .N, by = .(cd)]
+dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2022-08-01'&$limit=999999999999")
+dsny_311[, bbl := as.character(bbl)]
+ 
+# remove dismissed complaints
+dsny_sub <- dsny_311[!resolution_description %in% 
+                        c("The Department of Sanitation investigated this complaint and found no violation at the location.", 
+                          "The Department of Sanitation investigated this complaint and found no condition at the location.") & !is.na(latitude), ] 
 
-# normalize by number of complaints by n biz/cd
-vsd_dsny[, n_cmpts_p_biz := round(n_cmpts/n_biz_cd, 2)]
-biz_comps <- unique(vsd_dsny[, .(cd, n_biz_cd, n_cmpts, n_cmpts_p_biz)])
+business_complaints <- c("Commercial Disposal Complaint", "Retailer Complaint")
 
-# vsd_dsny %>% distinct()
+dsny_311_biz <- dsny_sub[complaint_type %in% business_complaints,.(location, unique_key)] %>% 
+  st_as_sf(wkt = "location", crs = 4326) %>% 
+  st_transform(2263) 
 
-# council district shapes -------------------------------------------------
-url <- "https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nycc_22c.zip"
-cd_shp <- unzip_sf(url)
-cd <- read_sf(cd_shp) %>% 
-  st_transform('+proj=longlat +datum=WGS84')
+biz_comp_dt <-  bizhex %>% 
+  st_join(dsny_311_biz) %>%  
+  as.data.table()
+wdt <- biz_comp_dt[!is.na(unique_key), ]
 
-# dsny biz complaints per cd ----------------------------------------------
-cd_biz <- cd %>% 
-  left_join(biz_comps, by = c("CounDist" = "cd")) %>% 
+# how many complaints re biz per geom
+wdt[, .N, by = c("id", "unique_key")][order(N, decreasing = T)]
+
+# biz per geom/# cmplnts per geom
+wdt[, n_bz := length(unique(bbl)), by = "id"]
+wdt[, n_cmp := length(unique(unique_key)), by = "id"]
+wdt[, cmp_2_biz := round(n_cmp/n_bz, 2)]
+
+wdt_sf <- wdt[, .(geometry, cmp_2_biz, id)] %>% 
+  distinct() %>% 
   st_as_sf() %>% 
-  st_transform('+proj=longlat +datum=WGS84')
+  st_transform('+proj=longlat +datum=WGS84') 
+
+pal <- leaflet::colorBin(palette = "Blues", domain = unique(wdt_sf$cmp_2_biz))
+
+m_biz <- leaflet() %>% 
+  addCouncilStyle(add_dists = TRUE) %>% 
+  leaflet::addPolygons(data = wdt_sf, 
+                       fillColor = ~pal(cmp_2_biz), 
+                       color =  ~pal(cmp_2_biz), 
+                       label = ~paste0(cmp_2_biz), 
+                       opacity = 0, 
+                       fillOpacity = 1) %>% 
+  addLegend(pal = pal, 
+            values = unique(wdt_sf$cmp_2_biz), 
+            position = "topleft", 
+            title = "Complaints per Business")
+
+
+mapview::mapshot(m_biz, "visuals/dsny_biz_cmplts_2022-sept2023.html")
 
 # commercial waste zones --------------------------------------------------
 # cwurl <- "https://data.cityofnewyork.us/api/geospatial/8ev8-jjxq?accessType=DOWNLOAD&method=export&format=Shapefile"
@@ -77,11 +107,4 @@ cd_biz <- cd %>%
 #   st_simplify(preserveTopology = TRUE,
 #               dTolerance = 100) %>%
 #   st_cast("MULTIPOLYGON") 
-# 
-# # checks 
-# biz_sub[location %in% "", ]
-# how many businesses per cd 
-# biz_sub[,n_biz_cd := .N, by = "cd"]
-# how many empty bbls 
-# biz_sub[bbl %in% "", ] # 862/28315 - not bad
 
