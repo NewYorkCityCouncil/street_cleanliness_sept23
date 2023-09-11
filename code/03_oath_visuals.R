@@ -230,13 +230,20 @@ plot1 <- lion_vios %>% slice_max(total, n=10) %>%
 
 #plot(density(lion_vios$vios_per_length))
 #extremely skewed - 
-
-ints <- classIntervals(lion_vios$vios_per_length, n = 5, 
-                      style = 'maximum', cutlabels=F)
-
+# making custom bins   
+# ints <- classIntervals(lion_vios$vios_per_length, n = 5, 
+#                       style = 'maximum', cutlabels=F)
+# 
 pal_street <-  leaflet::colorBin(
-  palette = c('#FFFFFF','#EEB6B1','#C67466','#800000'),
-  bins = ints$brks,
+  palette = c('#EEB6B1','#C67466','#993123','#800000'),
+  bins = c(0,1,4,9,max(lion_vios$vios_per_length)),
+  domain = lion_vios$vios_per_length,
+  na.color = "#FFFFFF"
+)
+
+pal_legend <- leaflet::colorFactor(
+  palette = c('#EEB6B1','#C67466','#993123','#800000'),
+  #bins = c(0,1,4,9,max(lion_vios$vios_per_length)),
   domain = lion_vios$vios_per_length,
   na.color = "#FFFFFF"
 )
@@ -249,21 +256,26 @@ for(i in 1:dim(fix_geom)[1]){
   fix_geom$SHAPE[i]=st_cast(fix_geom$SHAPE[i], "MULTILINESTRING")
 }
 
+# bin cut offs based on quantiles
+cut_996 <- quantile(lion_vios.shp$vios_per_length,.996)
+# 0%-99.5% of streets : < 1 violation per 1ft of a street's length
+
 lion_vios.shp <- lion_vios %>% 
   filter(grepl("list\\(list",id)==F) %>% #drop the multicurve rows
   bind_rows(fix_geom) %>%  #add the multicurve rows fixed to multistring
-  mutate(bin = case_when(vios_per_length<0.07118 ~ '#FFFFFF', 
-                         vios_per_length>=0.07118 & 
-                           vios_per_length<3.59512 ~ "#EEB6B1",
-                         vios_per_length>=3.59512 &
-                           vios_per_length<6.8900940225 ~ '#993123',
-                         vios_per_length>=6.8900940225 ~ "#800000"),
-         size = case_when(bin =='#FFFFFF' ~ 0.5,
-                          bin =='#EEB6B1' ~ 1,
+  mutate(bin = case_when(vios_per_length< 1~ '#EEB6B1', 
+                         vios_per_length>=1 & 
+                           vios_per_length<4 ~ "#C67466",
+                         vios_per_length>=4 &
+                           vios_per_length<9 ~ '#993123',
+                         vios_per_length>=9 ~ "#800000"),
+         size = case_when(bin =='#EEB6B1' ~ 0.5,
+                          bin =='#C67466' ~ 2.5,
                           bin =='#993123' ~ 6,
                           bin =='#800000' ~ 6.5) )
 
-# separate each bin level to separate layer?
+
+
 
 # make points for the top ten worst
 top99975 <- lion_vios %>% 
@@ -271,24 +283,39 @@ top99975 <- lion_vios %>%
   st_as_sf() %>% st_centroid()
 
 map <- leaflet() %>% 
-  addCouncilStyle(add_dists = T) %>% 
-  # addCircleMarkers(data= top10, stroke = F,
-  #                  fillColor = pal_nycc("cool")[7],
-  #                  radius = 5,
-  #                  weight = 3,
-  #                  fillOpacity = 0.7) %>% 
+  # leaflet(options = leafletOptions(minZoom = 11, maxZoom = 13,
+  #                                  zoomControl = FALSE,
+  #                                  dragging = T)) %>%
+  # addCouncilStyle() %>% not working
+  #leaflet.extras::setMapWidgetStyle(list(background= "white")) %>%
+  addCouncilStyle(add_dists = TRUE, 
+                  highlight_dists = c(9:10,16,18,26,37,3), 
+                  highlight_color = "#800000") %>%
   addPolylines(data= lion_vios.shp,
                opacity = 0.6,
                weight = ~lion_vios.shp$size,
-               color = ~lion_vios.shp$bin,
+               color = ~pal_street(vios_per_length),
                popup = paste("<h4>",lion_vios.shp$full_address,"<hr>",
                              "<small>Violations Per Foot: </small>",
-                             lion_vios.shp$vios_per_length,
+                             round(lion_vios.shp$vios_per_length,1),
                              "<br>",
                              "<small>Street Length: </small>", 
-                             lion_vios.shp$SHAPE_Length,
+                             round(lion_vios.shp$SHAPE_Length),
                              "<br>",
                              "<small>Total Violations: </small>",
-                             lion_vios.shp$total)) 
+                             round(lion_vios.shp$total))) %>% 
+  # addLegend_decreasing(position = "topleft", pal = pal_street, 
+  #                      title = paste0("Violations Per Foot"),  
+  #                      values = c(0, 1), opacity = 1, decreasing = T, 
+  #                      na.label = "NA") %>% 
+  leaflegend::addLegendBin(data = lion_vios.shp,
+    position = "topleft",
+                  pal= pal_street,
+                  shape = "rect",
+                  orientation = "horizontal",
+                  values = lion_vios$vios_per_length,
+                  title = paste("Violations Per Foot",'/n'),
+  numberFormat = function(x) {format(round(x), trim = TRUE,
+           scientific = FALSE)} )
 
 htmlwidgets::saveWidget(map, file="visuals/dirtiest_streets_map.html", selfcontained = T)

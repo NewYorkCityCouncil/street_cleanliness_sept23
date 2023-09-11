@@ -7,7 +7,7 @@
 
 list.of.packages <- c("tidyverse", "janitor", "vroom", "data.table", "leaflet", "sf", "ggplot2", "stringr", "skimr", "lubridate", "mapview",
                       "ggiraph",'htmltools', 'gt', 'gtExtras',
-                      'classInt')
+                      'classInt', 'leaflegend')
 
 # checks if packages has been previously installed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
