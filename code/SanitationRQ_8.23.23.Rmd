@@ -63,7 +63,7 @@ od_dl <- dsny_311
 # let's group in a sensible way to reduce categories
 od_dl[complaint_type %in% "Missed Collection (All Materials)", complaint_type := "Missed Collection"]
 
-od_dl[grepl("Litter", complaint_type) | grepl("litter", complaint_type), complaint_type := "Litter"]
+od_dl[grepl("Litter", complaint_type, ignore.case = TRUE) | grepl("litter", descriptor, ignore.case = TRUE), complaint_type := "Litter"]
 
 od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition", "Dirty"), complaint_type := "Dirty Conditions"]
 # change, take out littering and make own chart

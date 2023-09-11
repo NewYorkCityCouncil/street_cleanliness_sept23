@@ -7,7 +7,7 @@ library(ggiraph)
 # street cleanliness 
 sum <- sum(od_dl_sub[od_dl_sub$complaint_type=="Dirty Conditions"]$n_comp) + 
   sum(od_dl_sub[od_dl_sub$complaint_type=="Litter"]$n_comp)
-complaint <- "Litter/Dirty Conditions"
+complaint <- "Dirty Conditions"
 type <- "311"
 df_1 <- data.frame(sum, complaint, type)
 
@@ -39,7 +39,7 @@ df_3 <- data.frame(sum, complaint, type)
 # df_5 <- data.frame(sum, complaint)
 
 sum <- c(3040, 208665, 927)
-complaint <- c("Derelict Vehicles", "Litter/Dirty Conditions", "Illegal Dumping")
+complaint <- c("Derelict Vehicles", "Dirty Conditions", "Illegal Dumping")
 type <- "OATH"
 df_4 <- data.frame(sum, complaint, type)
 
@@ -64,12 +64,14 @@ plot <- complaints %>%
   coord_flip() +
   labs(title="311 Complaints and OATH Violations",
        subtitle = "Year to Date: August 2022 - August 2023", 
-       x="",  y="Totals") +
+       x="",  y="Totals",
+       caption = "311 complaints for dirty conditions include litter.") +
   theme_nycc() +
   theme(legend.position="none") +
   theme(axis.text.x = element_text(angle = 0, hjust = 1, size = 11),
         legend.position = "none",
-        axis.text.y = element_text(size = 11))
+        axis.text.y = element_text(size = 11),
+        plot.caption = element_text(hjust=0, size=10))
 
 tooltip_css <- "background-color:#CACACA;"
 
