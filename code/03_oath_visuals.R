@@ -314,7 +314,7 @@ map <- leaflet() %>%
                   shape = "rect",
                   orientation = "horizontal",
                   values = lion_vios$vios_per_length,
-                  title = paste("Violations Per Foot",'/n'),
+                  title = paste("Violations Per Foot",'\n'),
   numberFormat = function(x) {format(round(x), trim = TRUE,
            scientific = FALSE)} )
 
