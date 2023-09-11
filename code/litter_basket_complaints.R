@@ -8,7 +8,7 @@ boro_sf <- st_read(boro_zip) %>%
   st_transform(2263)
 
 # dsny complaints ---------------------------------------------------------
-dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2022-08-01'&$limit=999999999999")
+dsny_311 <- vroom("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2022-08-01'&$limit=999999999999") %>% as.data.table()
 dsny_311[, bbl := as.character(bbl)][, created_date := as.Date(created_date)]
 
 # remove dismissed complaints
@@ -62,20 +62,26 @@ sub_sf <- lbdt_sub[, .(comps_per_lb, geometry)] %>%
   distinct() %>% 
   st_as_sf() %>% 
   st_transform('+proj=longlat +datum=WGS84') 
+
+# check distribution - very skewed
+plot(density(sub_sf$comps_per_lb, na.rm = T))
+ints = classIntervals(sub_sf$comps_per_lb, n = 5, style = "headtails")
   
-pal <- leaflet::colorBin(palette = "Blues", domain = unique(sub_sf$comps_per_lb))
+pal <- leaflet::colorBin(palette = pal_nycc("cool"),
+                           bins = ints$brks,
+                           domain = sub_sf$comps_per_lb,
+                           na.color = "#FFFFFF")
 
 m_lb <- leaflet() %>% 
   addCouncilStyle(add_dists = TRUE) %>% 
-  leaflet::addPolygons(data=sub_sf, 
-                       fillColor = ~pal(comps_per_lb), 
-                       label = ~paste0(comps_per_lb), 
-                       opacity = 0, 
-                       fillOpacity = .5) %>% 
-  addLegend(pal = pal, 
-            values = unique(sub_sf$comps_per_lb), 
+  addPolygons(data=sub_sf, fillColor = ~pal(comps_per_lb), 
+              label = ~paste0(comps_per_lb), 
+              opacity = 0, fillOpacity = 0.9) %>% 
+  addLegend_decreasing(pal = pal, decreasing = T,
+            values = sub_sf$comps_per_lb, 
             position = "topleft", 
-            title = "Litter Basket Complaints <br/> per Litter Basket")
+            title = "Litter Basket Complaints <br/> per Litter Basket",
+            labFormat = labelFormat(digits = 1))
 
 
  mapview::mapshot(m_lb, "visuals/lb_desserts.html")
