@@ -47,42 +47,24 @@ ggplot(to_all_vios_mon, aes(x=ymd(month), y=violations,
 
 # monthly trend all categories -----
 
-monthly_trend <- all_vios %>% 
-  group_by(month) %>% count(name = 'total') %>% ungroup() %>% 
-  mutate(category = rep("All Violations", nrow(.)))
 
+## YTD total all categories bar chart ------
+# plot
 cat_monthly_trend <- all_vios %>% 
   mutate(category= case_when(category=='Littering' ~ 'dirty sidewalk',
                              TRUE ~ category)) %>% 
+  filter(month >= '2022-08-01' & month < '2023-09-01') %>% 
   group_by(month, category) %>% count(name = 'total') %>% 
   arrange(desc(total)) %>% 
   mutate(category = factor(category, 
-                           levels=names(sort(table(all_vios$category), decreasing = T))))
+                           levels=names(sort(table(category), decreasing = T))))
 
-together <-rbind(monthly_trend, cat_monthly_trend)
-
-# reshape to do facet
-monthly_trend <- monthly_trend %>% 
-  left_join(cat_monthly_trend, by=c('month')) %>% 
-  select(-category.x) %>% 
-  mutate(percent = round((total.y / total.x) *100))
-
-ggplot(cat_monthly_trend, aes(x=month, y=total, 
-                            group = category, color=category)) +
-  geom_point() +
-  geom_smooth(se=F, span=0.25) +
-  facet_wrap(. ~ category) +
-  #geom_line() +
-  scale_x_date(date_labels = "%m-%Y", breaks = "6 months") +
-  theme_nycc() +
-  #scale_color_nycc() +
-  ggtitle("Related Sanitation Vs All Oath Violations", "Monthly Trend")
-
-## YTD total all categories bar chart
-# plot
 bar_cat_vios <- cat_monthly_trend %>% 
-  filter(month>=2022-09-01) %>% group_by(category) %>% 
-  summarize(total=sum(total))
+  group_by(category) %>% 
+  summarize(total=sum(total)) %>% 
+  mutate(category = toupper(category))
+
+write_csv(bar_cat_vios, "data/output/oath_ytd_categories.csv")
 
 plot <- 
   bar_cat_vios %>% 

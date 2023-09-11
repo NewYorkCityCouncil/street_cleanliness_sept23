@@ -13,7 +13,7 @@ litter_basket <- vroom(basket_url, col_select = c(1:15,23:24,34:42))
 cats_r$charge_1_code[which(
   cats_r$relevant_charge %in% c('illegal dumping'))]
 
-illdump_url<- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272018-01-01T00:00:00%27%20AND%20charge_1_code%20in(%27AS13%27,%27AS14%27,%27AS15%27,%27AS16%27,%27AA13%27,%27AS1Q%27)")
+illdump_url<- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272022-08-01T00:00:00%27%20AND%20charge_1_code%20in(%27AS13%27,%27AS14%27,%27AS15%27,%27AS16%27,%27AA13%27,%27AS1Q%27)")
 
 illegal_dumping <- vroom(illdump_url, col_select = c(1:15,23:24,34:42))
 
@@ -24,7 +24,7 @@ litter_code <- cats_r$charge_1_code[which(
   cats_r$relevant_charge %in% c('debris', 'littering','spills'))]
 paste0(unlist(strsplit(litter_code, " , ")), collapse = "' , '")
 
-litter_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272018-01-01T00:00:00%27%20AND%20charge_1_code%20in(%27AS08%27%20,%20%27AS19%27%20,%20%27AS22%27%20,%20%27AS9C%27%20,%20%27AS9D%27%20,%20%27AS03%27%20,%20%27AS04%27%20,%20%27AS05%27%20,%20%27AS3C%27%20,%20%27AS09%27%20,%20%27AS9A%27%20,%20%27AS9B%27%20,%20%27AFK2%27%20,%20%27AFZ5%27%20,%20%27AH3I%27%20,%20%27AK09%27%20,%20%27AS3F%27%20,%20%27ASF3%27)")
+litter_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272022-08-01T00:00:00%27%20AND%20charge_1_code%20in(%27AS08%27%20,%20%27AS19%27%20,%20%27AS22%27%20,%20%27AS9C%27%20,%20%27AS9D%27%20,%20%27AS03%27%20,%20%27AS04%27%20,%20%27AS05%27%20,%20%27AS3C%27%20,%20%27AS09%27%20,%20%27AS9A%27%20,%20%27AS9B%27%20,%20%27AFK2%27%20,%20%27AFZ5%27%20,%20%27AH3I%27%20,%20%27AK09%27%20,%20%27AS3F%27%20,%20%27ASF3%27)")
 
 littering <- vroom(litter_url, col_select = c(1:15,23:24,34:42))
 littering$category <- rep('Littering', nrow(littering))
@@ -95,7 +95,7 @@ failed_to_rec <- vroom(fail_recy_url, col_select = c(1:15,23:24,34:42))
 failed_to_rec$category <- rep('Failure to Recycle', nrow(failed_to_rec))
 
 # 7: abandoned vehicle -- search the term ---------------
-aband_vech_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272018-01-01T00:00:00%27%20AND%20charge_1_code%20in(%27AV01%27,%27AS24%27)")
+aband_vech_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272022-08-01T00:00:00%27%20AND%20charge_1_code%20in(%27AV01%27,%27AS24%27)")
 #using abandoning & disabled vehicle
 
 search_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272018-01-01T00:00:00%27&$q=vehicle")
@@ -109,20 +109,19 @@ dirty_sidewalk_code <- cats_r$charge_1_code[which(
   cats_r$relevant_charge %in% c('dirty sidewalk'))]
 paste0(unlist(strsplit(dirty_sidewalk_code, " , ")), collapse = "' , '")
 
-dirty_sidewalk_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272018-01-01T00:00:00%27%20AND%20charge_1_code%20in(%27AS06%27%20,%20%27AS26%27%20,%20%27AS6M%27%20,%20%27AS6V%27%20,%20%27AS8V%27%20,%20%27AS97%27%20,%20%27AT12%27%20,%20%27AT13%27)")
+dirty_sidewalk_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272022-08-01T00:00:00%27%20AND%20charge_1_code%20in(%27AS06%27%20,%20%27AS26%27%20,%20%27AS6M%27%20,%20%27AS6V%27%20,%20%27AS8V%27%20,%20%27AS97%27%20,%20%27AT12%27%20,%20%27AT13%27)")
 
 dirty_sidewalk <- vroom(dirty_sidewalk_url, col_select = c(1:15,23:24,34:42))
 
 dirty_sidewalk$category <- rep('dirty sidewalk', nrow(dirty_sidewalk))
-date_extract_y
+
 
 # combine all violations ---------
 
 # t <- sort(table(all_vios$category), decreasing = T)
 # prop.table(t)*100
 
-all_vios <- rbind(dirty_sidewalk, illegal_dumping, failed_to_rec,
-                  abandoned_vec,littering, rats2, rodent) %>% 
+all_vios <- rbind(dirty_sidewalk, illegal_dumping, abandoned_vec, littering) %>% 
   select(!c(violation_location_floor, violation_description)) %>%  # drop uneeded columns
   mutate(block = str_pad(violation_location_block_no, 5, pad = "0"), 
          lot = str_pad(violation_location_lot_no, 4, pad = "0"), 
