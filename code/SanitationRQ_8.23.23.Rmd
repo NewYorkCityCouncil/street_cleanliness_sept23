@@ -35,7 +35,8 @@ library(councildown)
 **Using 311 complaints available from 2018 and beyond:**
 
 ```{r}
-dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2018-01-01'&$limit=999999999999")
+# dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2018-01-01'&$limit=999999999999")
+dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2022-08-01'&$limit=999999999999")
 ```
 
 ```{r}
@@ -43,6 +44,11 @@ setDT(dsny_311)
 dsny_311[, created_date := as.Date(created_date)][, yr := year(created_date)][, mo := month(created_date)]
 dsny_311[, date_ym:=as.yearmon(created_date)]
 ```
+
+```{r}
+dsny_311 <- dsny_311 %>% filter(created_date >= "2022-08-01" & created_date < "2023-09-01")
+```
+
 
 
 #### STREET CLEANLINESS ####
@@ -56,8 +62,13 @@ od_dl <- dsny_311
 ```{r}
 # let's group in a sensible way to reduce categories
 od_dl[complaint_type %in% "Missed Collection (All Materials)", complaint_type := "Missed Collection"]
-od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition", "Dirty Conditions"), complaint_type := "Dirty Conditions"]
-od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Sanitation Condition")]
+
+od_dl[grepl("Litter", complaint_type, ignore.case = TRUE) | grepl("litter", descriptor, ignore.case = TRUE), complaint_type := "Litter"]
+
+od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition", "Dirty"), complaint_type := "Dirty Conditions"]
+# change, take out littering and make own chart
+
+od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Litter")]
 ```
 
 ```{r}
