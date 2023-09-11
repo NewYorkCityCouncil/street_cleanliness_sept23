@@ -62,9 +62,7 @@ plot <- complaints %>%
         complaints$type
         )) +
   coord_flip() +
-  labs(title="311 Complaints and OATH Violations",
-       subtitle = "Year to Date: August 2022 - August 2023", 
-       x="",  y="Totals",
+  labs(x="",  y="Totals",
        caption = "311 complaints for dirty conditions include litter.") +
   theme_nycc() +
   theme(legend.position="none") +
