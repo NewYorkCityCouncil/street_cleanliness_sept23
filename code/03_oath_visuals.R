@@ -78,6 +78,48 @@ ggplot(cat_monthly_trend, aes(x=month, y=total,
   #scale_color_nycc() +
   ggtitle("Related Sanitation Vs All Oath Violations", "Monthly Trend")
 
+## YTD total all categories bar chart
+# plot
+bar_cat_vios <- cat_monthly_trend %>% 
+  filter(month>=2022-09-01) %>% group_by(category) %>% 
+  summarize(total=sum(total))
+
+plot <- 
+  bar_cat_vios %>% 
+  ggplot(aes(x = reorder(category,total), 
+             y=total, fill = category)) +
+  geom_col_interactive(width = 0.6,
+                       tooltip = 
+                         paste(bar_cat_vios$category, 
+                               "<br>Violations:", 
+                               round(bar_cat_vios$total))) +
+  
+  coord_flip() +
+  geom_text(show.legend = F, size = 3,
+            label= paste0(round(bar_cat_vios$total, 0), " violations"), 
+            nudge_x = 0, hjust=-0.15) +
+  scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+  ylab("Violations") + xlab("") +
+  labs(title="Citywide Total Sanitation OATH Violations",
+       subtitle = "(Year-to-Date)", 
+       x="",  y="Violations") +
+  theme_nycc()+
+  theme(axis.text.x = element_text(angle = 0, hjust = 1, size = 11),
+        legend.position = "none",
+        axis.text.y = element_text(size = 11))
+
+tooltip_css <- "background-color:#CACACA;"
+
+plot_interactive <- girafe(ggobj = plot,   
+                           width_svg = 6,
+                           height_svg = 5, 
+                           options = list(
+                             opts_tooltip(css = tooltip_css)
+                           )
+)
+
+
+htmltools::save_html(plot_interactive, "visuals/vios_ytd_total_citywide_bar.html")
 
 ## dirty sidewalk alone -------
 
@@ -189,7 +231,7 @@ plot1 <- lion_vios %>% slice_max(total, n=10) %>%
 #plot(density(lion_vios$vios_per_length))
 #extremely skewed - 
 
-ints <- classIntervals(lion_vios$vios_per_length, n = 3, 
+ints <- classIntervals(lion_vios$vios_per_length, n = 5, 
                       style = 'maximum', cutlabels=F)
 
 pal_street <-  leaflet::colorBin(
@@ -210,16 +252,16 @@ for(i in 1:dim(fix_geom)[1]){
 lion_vios.shp <- lion_vios %>% 
   filter(grepl("list\\(list",id)==F) %>% #drop the multicurve rows
   bind_rows(fix_geom) %>%  #add the multicurve rows fixed to multistring
-  mutate(bin = case_when(vios_per_length<=ints$brks[2] ~ "#FFD8D8",
-                         vios_per_length>ints$brks[2] &
-                           vios_per_length<=ints$brks[3] ~"#EEB6B1",
-                         vios_per_length>ints$brks[3] &
-                           vios_per_length<=ints$brks[4] ~ "#C67466",
-                         vios_per_length>ints$brks[4]~ "#800000"),
-         size = case_when(bin == '#FFD8D8' ~ 2,
-                          bin == '#EEB6B1' ~ 3,
-                          bin == '#C67466' ~ 4,
-                          bin == '#800000' ~ 5))
+  mutate(bin = case_when(vios_per_length<0.07118 ~ '#FFFFFF', 
+                         vios_per_length>=0.07118 & 
+                           vios_per_length<3.59512 ~ "#EEB6B1",
+                         vios_per_length>=3.59512 &
+                           vios_per_length<6.8900940225 ~ '#993123',
+                         vios_per_length>=6.8900940225 ~ "#800000"),
+         size = case_when(bin =='#FFFFFF' ~ 0.5,
+                          bin =='#EEB6B1' ~ 1,
+                          bin =='#993123' ~ 6,
+                          bin =='#800000' ~ 6.5) )
 
 # separate each bin level to separate layer?
 
@@ -229,15 +271,15 @@ top99975 <- lion_vios %>%
   st_as_sf() %>% st_centroid()
 
 map <- leaflet() %>% 
-  #addCouncilStyle(add_dists = T) %>% 
+  addCouncilStyle(add_dists = T) %>% 
   # addCircleMarkers(data= top10, stroke = F,
   #                  fillColor = pal_nycc("cool")[7],
   #                  radius = 5,
   #                  weight = 3,
   #                  fillOpacity = 0.7) %>% 
   addPolylines(data= lion_vios.shp,
-               opacity = 1,
-               weight = lion_vios.shp$size,
+               opacity = 0.6,
+               weight = ~lion_vios.shp$size,
                color = ~lion_vios.shp$bin,
                popup = paste("<h4>",lion_vios.shp$full_address,"<hr>",
                              "<small>Violations Per Foot: </small>",
@@ -248,3 +290,5 @@ map <- leaflet() %>%
                              "<br>",
                              "<small>Total Violations: </small>",
                              lion_vios.shp$total)) 
+
+htmlwidgets::saveWidget(map, file="visuals/dirtiest_streets_map.html", selfcontained = T)
