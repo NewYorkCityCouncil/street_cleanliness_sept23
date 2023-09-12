@@ -75,7 +75,7 @@ oath <- fread("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=99999
 
 descs <- unique(oath$charge_1_code_description)
 biz_descs <- descs[grep("commercial|food|restaurant|business|retail|drink|bar|beverage|
-                        store|hotel|alcohol|chain|closing", descs, ignore.case = TRUE)]
+                        store|hotel|alcohol|chain|closing|organics", descs, ignore.case = TRUE)]
 # remove dismissed?
 oath_sub <- oath[!hearing_result %in% "DISMISSED" & charge_1_code_description %in% biz_descs, 
                  .(boro = violation_location_borough, block = violation_location_block_no, 
@@ -115,7 +115,7 @@ wdt[, n_bz := length(unique(bbl)), by = "id"]
 wdt[, n_cmp := length(unique(unique_key)), by = "id"]
 wdt[, cmp_2_biz := round(n_cmp/n_bz, 2)]
 
-hist(wdt$cmp_2_biz)
+# hist(wdt$cmp_2_biz)
 
 wdt_sf <- wdt[, .(geometry, cmp_2_biz, n_cmp, 
                   n_bz, id)] %>% 
@@ -140,7 +140,7 @@ m_biz <- leaflet() %>%
             labFormat = function(type, cuts, p) {
               n = length(cuts)
               p = paste0(round(p * 100), '%')
-              cuts = paste0(formatC(cuts[-n]), " - ", formatC(cuts[-1]))
+              cuts = paste0(formatC(cuts[-n], digits = 2), " - ", formatC(cuts[-1], digits = 2))
               # mouse over the legend labels to see the percentile ranges
               paste0(
                 '<span title="', p[-n], " - ", p[-1], '">', cuts,
@@ -149,6 +149,7 @@ m_biz <- leaflet() %>%
             },
             position = "topleft", 
             title = "Complaints per Business")
+m_biz
 
 
 mapview::mapshot(m_biz, "visuals/dsny_biz_cmplts_2022-sept2023.html")
