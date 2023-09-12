@@ -113,7 +113,7 @@ wdt[, .N, by = c("id", "unique_key")][order(N, decreasing = T)]
 # biz per geom/# cmplnts per geom
 wdt[, n_bz := length(unique(bbl)), by = "id"]
 wdt[, n_cmp := length(unique(unique_key)), by = "id"]
-wdt[, cmp_2_biz := round(n_cmp/n_bz, 2)]
+wdt[, cmp_2_biz := 100 * round(n_cmp/n_bz, 2)]
 
 # hist(wdt$cmp_2_biz)
 
@@ -131,8 +131,8 @@ m_biz <- leaflet() %>%
                        # fillColor = ~pal(cmp_2_biz), 
                        color =  ~pal(cmp_2_biz), 
                        label = ~paste0(cmp_2_biz), 
-                       popup = paste0("<str/> Number of Businesses: ", wdt_sf$n_bz, "<br/>",
-                                "Number of Complaints: ", wdt_sf$n_cmp), 
+                       # popup = paste0("Number of Businesses: ", wdt_sf$n_bz, "<br/>",
+                               # "Number of Complaints/Violations: ", wdt_sf$n_cmp), 
                        opacity = 0, 
                        fillOpacity = .5) %>% 
   addLegend(pal = pal, 
@@ -140,7 +140,7 @@ m_biz <- leaflet() %>%
             labFormat = function(type, cuts, p) {
               n = length(cuts)
               p = paste0(round(p * 100), '%')
-              cuts = paste0(formatC(cuts[-n], digits = 2), " - ", formatC(cuts[-1], digits = 2))
+              cuts = paste0(formatC(cuts[-n], format = "d"), " - ", formatC(cuts[-1], format = "d"))
               # mouse over the legend labels to see the percentile ranges
               paste0(
                 '<span title="', p[-n], " - ", p[-1], '">', cuts,
@@ -148,10 +148,8 @@ m_biz <- leaflet() %>%
               )
             },
             position = "topleft", 
-            title = "Complaints per Business")
+            title = "Complaints/Violations <br/> per 100 Businesses")
 m_biz
-
-
 mapview::mapshot(m_biz, "visuals/dsny_biz_cmplts_2022-sept2023.html")
 
 # commercial waste zones --------------------------------------------------
