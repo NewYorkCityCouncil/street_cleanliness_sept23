@@ -7,7 +7,7 @@
 
 list.of.packages <- c("tidyverse", "janitor", "vroom", "data.table", "leaflet", "sf", "ggplot2", "stringr", "skimr", "lubridate", "mapview",
                       "ggiraph",'htmltools', 'gt', 'gtExtras',
-                      'classInt', 'leaflegend')
+                      'classInt', 'leaflegend', 'stringr')
 
 # checks if packages has been previously installed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -43,3 +43,5 @@ unzip_sf <- function(zip_url) {
   unlist(temp2)
   return(your_SHP_file)
 }
+
+
