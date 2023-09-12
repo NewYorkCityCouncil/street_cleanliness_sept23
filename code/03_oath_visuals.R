@@ -181,7 +181,7 @@ plot_interactive <- girafe(ggobj = plot, # formatting for all
 
 save_html(plot_interactive, "visuals/oath_abandoning_vehicle.html")
 ## dirtiest sidewalk table -----
-# normalized
+# normalized 1
 df <- lion_vios1 %>% 
   arrange(desc(vios_per_bbl)) %>%  ungroup() %>% as.data.frame() %>% 
   select(full_address, boro,vios_per_bbl, total, n)  %>% 
@@ -193,32 +193,46 @@ df <- lion_vios1 %>%
     boro ==  1 ~ "MANHATTAN", 
     boro ==  5 ~ "STATEN ISLAND"
   ))
-df <- df[1:20,] #slice was not working??
-names(df) <- c("Address", "Borough", "Violations Per Property", "Total # of Violations", "Total # of Properties")
+df <- df[1:5,] #slice was not working??
+names(df) <- c("Street Address", "Borough", "Violations Per Property", "Total # of Violations", "Total # of Properties")
 
 plot <- df %>% 
   gt() %>%
-  tab_header(
-    title = "Streets with the Highest Number of Dirty Sidewalk Violations",
-    subtitle = "Year to Date (August 2022 - August 2023)"
+  tab_header(title="",
+    subtitle = "Per Property Block & Lot"
   ) %>%
   #  tab_source_note(source_note = "") %>%
   gt_theme_nytimes() %>% 
   tab_options(column_labels.font.weight = "160px")
 
-plot %>% gtsave("visuals/dirtiest_streets.html")
+plot %>% gtsave("visuals/dirtiest_streets_per_bbl.html")
 
-#raw count
-plot1 <- lion_vios %>% slice_max(total, n=10) %>% 
-  select(full_address, total) %>% 
+# raw
+df1 <- lion_vios1 %>% 
+  arrange(desc(total)) %>% ungroup() %>% as.data.frame() %>% 
+  select(full_address, boro,vios_per_bbl, total, n)  %>% 
+  mutate(vios_per_bbl = round(vios_per_bbl,1),
+         boro = case_when(
+           boro == 3 ~ "BROOKLYN" , 
+           boro ==  4 ~ "QUEENS", 
+           boro ==  2 ~ "BRONX", 
+           boro ==  1 ~ "MANHATTAN", 
+           boro ==  5 ~ "STATEN ISLAND"
+         ))
+df1 <- df1[1:5,] #slice was not working??
+names(df1) <- c("Street Address", "Borough", "Violations Per Property", "Total # of Violations", "Total # of Properties")
+
+
+plot1 <- df1 %>% 
   gt() %>%
-  tab_header(
-    title = "Streets with the Highest Number of Dirty Sidewalk Violations Per Foot",
-    subtitle = "Year to Date (August 2022-Present)"
+  tab_header(title="",
+    subtitle = "Raw Counts"
   ) %>%
   #  tab_source_note(source_note = "") %>%
   gt_theme_nytimes() %>% 
   tab_options(column_labels.font.weight = "160px")
+  
+plot1 %>% gtsave("visuals/dirtiest_streets.html")
 
 ## dirtiest sidewalk map ---------
 
