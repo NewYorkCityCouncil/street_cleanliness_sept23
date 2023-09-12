@@ -23,9 +23,9 @@ The data team provided analysis on:
 - Areas of concern, particularly exploring the relation of areas where businesses are to commercial waste
 
 #### Main Takeaways
-- Dirty conditions were the most prevalent issue in our analysis, receiving both the highest number of OATH violations and 311 complaints.
+- Dirty conditions were the most prevalent issue in our analysis, receiving both the highest number of OATH violations and 311 complaints
 - The proportion of OATH violations that go to businesses is xxx
-- Looking at additional areas of concern, the top two streets with the most OATH violations per property and the top street with the most OATH violations overall were located in the Bronx.
+- Looking at additional areas of concern, the top two streets with the most OATH violations per property and the top street with the most OATH violations overall were located in the Bronx
 
 #### Recommendations
 To address this issue, the Committee on Sanitation and Solid Waste Management will be hearing the following legislation:
