@@ -193,7 +193,7 @@ df <- lion_vios1 %>%
     boro ==  1 ~ "MANHATTAN", 
     boro ==  5 ~ "STATEN ISLAND"
   ))
-df <- df[1:10,] #slice was not working??
+df <- df[1:5,] #slice was not working??
 names(df) <- c("Street Address", "Borough", "Violations Per Property", "Total # of Violations", "Total # of Properties")
 
 plot <- df %>% 
@@ -208,7 +208,7 @@ plot <- df %>%
 plot %>% gtsave("visuals/dirtiest_streets_per_bbl.html")
 
 # raw
-df <- lion_vios1 %>% 
+df1 <- lion_vios1 %>% 
   arrange(desc(total)) %>% ungroup() %>% as.data.frame() %>% 
   select(full_address, boro,vios_per_bbl, total, n)  %>% 
   mutate(vios_per_bbl = round(vios_per_bbl,1),
@@ -219,11 +219,11 @@ df <- lion_vios1 %>%
            boro ==  1 ~ "MANHATTAN", 
            boro ==  5 ~ "STATEN ISLAND"
          ))
-df <- df[1:10,] #slice was not working??
-names(df) <- c("Street Address", "Borough", "Violations Per Property", "Total # of Violations", "Total # of Properties")
+df1 <- df1[1:5,] #slice was not working??
+names(df1) <- c("Street Address", "Borough", "Violations Per Property", "Total # of Violations", "Total # of Properties")
 
 
-plot1 <- df %>% 
+plot1 <- df1 %>% 
   gt() %>%
   tab_header(title="",
     subtitle = "Raw Counts"
