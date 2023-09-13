@@ -4,14 +4,18 @@ library(ggiraph)
 
 # run 01_311_inital_request.Rmd first
 
-od_dl[complaint_type %in% "Missed Collection (All Materials)", complaint_type := "Missed Collection"]
-od_dl[grepl("Litter", complaint_type, ignore.case = TRUE) | grepl("litter", descriptor, ignore.case = TRUE), complaint_type := "Litter"]
+od_dl <- dsny_311
+# od_dl[complaint_type %in% "Missed Collection (All Materials)", complaint_type := "Missed Collection"]
 od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition", "Dirty"), complaint_type := "Dirty Conditions"]
-od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Litter")]
+od_dl[grepl("Litter", complaint_type, ignore.case = TRUE) | grepl("litter", descriptor, ignore.case = TRUE), complaint_type := "Litter"]
+od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Litter")]
 
 # ---- 311 ----
 # 2018 to present
 # street cleanliness 
+od_dl_sub[, n_comp := .N, by = c("complaint_type", "date_ym")]
+od_dl_sub <- od_dl_sub[, .(complaint_type, date_ym, n_comp)]
+od_dl_sub <- unique(od_dl_sub)
 sum <- sum(od_dl_sub[od_dl_sub$complaint_type=="Dirty Conditions"]$n_comp) + 
   sum(od_dl_sub[od_dl_sub$complaint_type=="Litter"]$n_comp)
 complaint <- "Dirty Conditions"
@@ -57,9 +61,7 @@ plot <- complaints %>%
   labs(x="",  y="Totals",
        caption = "311 complaints for dirty conditions include litter.") +
   theme_nycc() +
-  theme(legend.position="none") +
   theme(axis.text.x = element_text(angle = 0, hjust = 1, size = 11),
-        legend.position = "none",
         axis.text.y = element_text(size = 11),
         plot.caption = element_text(hjust=0, size=10))
 
@@ -70,7 +72,6 @@ plot_interactive <- girafe(ggobj = plot,
                            height_svg = 5, 
                            options = list(
                              opts_tooltip(css = tooltip_css)
-                           )
-)
+                           ))
 htmltools::save_html(plot_interactive, "../visuals/complaints_311_citywide_bar.html")
 
