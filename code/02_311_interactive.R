@@ -16,7 +16,7 @@ od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Litter")]
 od_dl_sub[, n_comp := .N, by = c("complaint_type", "date_ym")] # count by complaint type, date
 od_dl_sub <- od_dl_sub[, .(complaint_type, date_ym, n_comp)] # subset to complaint type, date, n
 od_dl_sub <- unique(od_dl_sub) # get rid of dupes
-od_dl_sub <- od_dl_sub[od_dl_sub$date_ym >= "2022-08-01" & id_over_time_df$date_ym < "2023-08-01", ] # filter for 1 year
+od_dl_sub <- od_dl_sub[od_dl_sub$date_ym >= "2022-08-01" & od_dl_sub$date_ym < "2023-09-01", ] # filter for 1 year
 sum <- sum(od_dl_sub[od_dl_sub$complaint_type=="Dirty Conditions"]$n_comp) + 
   sum(od_dl_sub[od_dl_sub$complaint_type=="Litter"]$n_comp) # combine dirty conditions + litter n
 complaint <- "Dirty Conditions"
@@ -25,14 +25,18 @@ df_1 <- data.frame(sum, complaint, type)
 
 
 # ---- illegal dumping
-id_over_time_df <- id_over_time_df[id_over_time_df$date_ym >= "2022-08-01" & id_over_time_df$date_ym < "2023-08-01", ]
+dsny_311_id <- dsny_311[dsny_311$complaint_type == "Illegal Dumping",]
+id_over_time_df <- dsny_311_id %>% group_by(date_ym) %>% summarise(n_comp=n())
+id_over_time_df <- id_over_time_df[id_over_time_df$date_ym >= "2022-08-01" & id_over_time_df$date_ym < "2023-09-01", ]
 sum <- sum(id_over_time_df$n_comp)
 complaint <- "Illegal Dumping"
 type <- "311"
 df_2 <- data.frame(sum, complaint, type)
 
 # ---- derelict vehicles
-dv_over_time_df <- dv_over_time_df[dv_over_time_df$date_ym >= "2022-08-01" & dv_over_time_df$date_ym < "2023-08-01", ]
+dsny_311_dv <- dsny_311[dsny_311$complaint_type == "Derelict Vehicles",]
+dv_over_time_df <- dsny_311_dv %>% group_by(date_ym) %>% summarise(n_comp=n())
+dv_over_time_df <- dv_over_time_df[dv_over_time_df$date_ym >= "2022-08-01" & dv_over_time_df$date_ym < "2023-09-01", ]
 sum <- sum(dv_over_time_df$n_comp)
 complaint <- "Derelict Vehicles"
 type <- "311"
@@ -111,7 +115,7 @@ id_interactive <- girafe(ggobj = id_plot,
 # htmltools::save_html(id_interactive, "../visuals/id_complaints_citywide_line.html")
 
 # yellow/brown grease
-grease_over_time_df <- dep_311_grease[dep_311_grease$date_ym >= "2022-08-01" & dep_311_grease$date_ym < "2023-08-01",] %>% 
+grease_over_time_df <- dep_311_grease[dep_311_grease$date_ym >= "2022-08-01" & dep_311_grease$date_ym <= "2023-08-01",] %>% 
   group_by(date_ym) %>% 
   summarise(n_comp = n())
 
