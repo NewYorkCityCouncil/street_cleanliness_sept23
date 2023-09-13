@@ -204,7 +204,7 @@ cb_by_cd_df <- dep_311_cb %>% group_by(community_board) %>% summarise(n_comp=n()
 
 ```{r}
 dep_311_grease <- dep_311[grepl("grease", dep_311$descriptor, ignore.case = TRUE),]
-dep_311_grease
+# dep_311_grease
 # write.csv(dep_311_grease, "data/output/all_grease_data.csv")
 ```
 
