@@ -35,8 +35,7 @@ library(councildown)
 **Using 311 complaints available from 2018 and beyond:**
 
 ```{r}
-# dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2018-01-01'&$limit=999999999999")
-dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2022-08-01'&$limit=999999999999")
+dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2018-01-01'&$limit=999999999999")
 ```
 
 ```{r}
@@ -46,10 +45,8 @@ dsny_311[, date_ym:=as.yearmon(created_date)]
 ```
 
 ```{r}
-dsny_311 <- dsny_311 %>% filter(created_date >= "2022-08-01" & created_date < "2023-09-01")
+# dsny_311 <- dsny_311 %>% filter(created_date >= "2022-08-01" & created_date < "2023-09-01")
 ```
-
-
 
 #### STREET CLEANLINESS ####
 
@@ -60,15 +57,17 @@ od_dl <- dsny_311
 ```
 
 ```{r}
-# let's group in a sensible way to reduce categories
+# **NEW VERSION** let's group in a sensible way to reduce categories
+# od_dl[grepl("Litter", complaint_type, ignore.case = TRUE) | grepl("litter", descriptor, ignore.case = TRUE), complaint_type := "Litter"]
+# 
+# od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition", "Dirty"), complaint_type := "Dirty Conditions"]
+# 
+# od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Litter")]
+
+# **OLD VERSION**: let's group in a sensible way to reduce categories
 od_dl[complaint_type %in% "Missed Collection (All Materials)", complaint_type := "Missed Collection"]
-
-od_dl[grepl("Litter", complaint_type, ignore.case = TRUE) | grepl("litter", descriptor, ignore.case = TRUE), complaint_type := "Litter"]
-
-od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition", "Dirty"), complaint_type := "Dirty Conditions"]
-# change, take out littering and make own chart
-
-od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Litter")]
+od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition"), complaint_type := "Dirty Conditions"]
+od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Sanitation Condition")]
 ```
 
 ```{r}
@@ -91,28 +90,25 @@ od_dl_sub <- unique(od_dl_sub)
 ggplot(od_dl_sub[od_dl_sub$date_ym < "2023-09-01"], aes(x= date_ym, y=n_comp, color=complaint_type), group=complaint_type) + geom_line() + 
   theme_bw() + labs(x="Date", y="Number of Complaints", title="311 Data on Street Cleanliness Complaints Over Time", 
                     subtitle="Jan 2018 - July 2023", colour="Complaint type") + theme_nycc()
-ggsave(filename = "clean_over_time.png", path = "visuals", width=10, height=7)
-# ---- Street cleanliness over time: plot
-ggplot(od_dl_sub[od_dl_sub$date_ym < "2023-09-01"], aes(x= date_ym, y=n_comp, color=complaint_type), group=complaint_type) + geom_smooth(method="loess", se=FALSE) + 
-  theme_bw() + labs(x="Date", y="Number of Complaints", title="311 Data on Street Cleanliness Complaints Over Time", 
-                    subtitle="Jan 2018 - July 2023", colour="Complaint type") + theme_nycc() # + scale_color_discrete(palette="diverging")
-ggsave(filename = "clean_over_time_smooth.png", path = "visuals", width=10, height=7)
+# ggsave(filename = "clean_over_time.png", path = "visuals", width=10, height=7)
 ```
 
 ```{r}
 # ---- Street cleanliness over time: table
 # od_dl_sub[od_dl_sub$date_ym < "2023-09-01"] %>% arrange(complaint_type)
-clean_over_time_df <- dcast(melt(as.data.table(od_dl_sub[od_dl_sub$date_ym < "2023-09-01"]), id.vars = c("complaint_type", "date_ym")), 
-      date_ym + variable ~ complaint_type, value.var = "value") %>% select(date_ym, `Dirty Conditions`, `Missed Collection`, `Sanitation Condition`)
-# clean_over_time_df
-write.csv(clean_over_time_df, "data/output/clean_over_time.csv")
+clean_over_time_df <- dcast(melt(as.data.table(od_dl_sub[od_dl_sub$date_ym < "2023-09-01"]), 
+                                 id.vars = c("complaint_type", "date_ym")), 
+                            date_ym + variable ~ complaint_type, value.var = "value") %>%
+  select(date_ym, `Dirty Conditions`, `Missed Collection`, `Sanitation Condition`)
+# write.csv(clean_over_time_df, "data/output/clean_over_time.csv")
 ```
 
 ```{r}
 # ---- Street cleanliness by community district: table
-clean_by_cd_df <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Sanitation Condition")] %>% group_by(community_board) %>% summarise(count=n())
-# clean_by_cd_df
-write.csv(clean_by_cd_df, "data/output/clean_by_comm.csv")
+clean_by_cd_df <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Sanitation Condition")] %>%
+  group_by(community_board) %>% 
+  summarise(count=n())
+# write.csv(clean_by_cd_df, "data/output/clean_by_comm.csv")
 ```
 
 #### ILLEGAL DUMPING ####
@@ -126,24 +122,19 @@ dsny_311_id <- dsny_311[dsny_311$complaint_type == "Illegal Dumping",]
 ```{r}
 # ---- Illegal dumping over time: table
 id_over_time_df <- dsny_311_id %>% group_by(date_ym) %>% summarise(n_comp=n())
-id_over_time_df
-write.csv(id_over_time_df, "data/output/id_over_time.csv")
-# dsny_311_id_my
+# write.csv(id_over_time_df, "data/output/id_over_time.csv")
 ```
 
 ```{r}
 # ---- Illegal dumping over time: plot
-ggplot(id_over_time_df[id_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_smooth(method="loess", se=FALSE) + labs(x="Date", y="Number of Complaints", title="311 Data on Illegal Dumping Complaints Over Time", subtitle="Sep 2021 - July 2023 \nData includes complaints filed with DSNY, excludes DEP.") + theme_nycc() 
-ggsave(filename = "id_over_time_smooth.png", path = "visuals", width=10, height=7)
 ggplot(id_over_time_df[id_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_line() + labs(x="Date", y="Number of Complaints", title="311 Data on Illegal Dumping Complaints Over Time", subtitle="Sep 2021 - July 2023 \nData includes complaints filed with DSNY, excludes DEP.") + theme_nycc() 
-ggsave(filename = "id_over_time.png", path = "visuals", width=10, height=7)
+# ggsave(filename = "id_over_time.png", path = "visuals", width=10, height=7)
 ```
 
 ```{r}
 # ---- Illegal dumping by community district: table
 id_by_cd_df <- dsny_311_id %>% group_by(community_board) %>% summarise(n_comp=n())
-id_by_cd_df
-write.csv(id_by_cd_df, "data/output/id_by_comm.csv")
+# write.csv(id_by_cd_df, "data/output/id_by_comm.csv")
 ```
 
 #### DERELICT VEHICLES ####
@@ -156,22 +147,19 @@ dsny_311_dv <- dsny_311[dsny_311$complaint_type == "Derelict Vehicles",]
 ```{r}
 # ---- Derelict vehicles over time: table
 dv_over_time_df <- dsny_311_dv %>% group_by(date_ym) %>% summarise(n_comp=n())
-dv_over_time_df
-write.csv(dv_over_time_df, "data/output/dv_over_time.csv")
+# write.csv(dv_over_time_df, "data/output/dv_over_time.csv")
 ```
 
 ```{r}
-# ---- Derelict vehicles over time: table
-ggplot(dv_over_time_df[dv_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_smooth(method="loess", se=FALSE) + labs(x="Date", y="Number of Complaints", title="311 Data on Derelict Vehicle Complaints Over Time", subtitle="Jan 2018 - July 2023") + theme_nycc() 
-ggsave(filename = "dv_over_time_smooth.png", path = "visuals", width=10, height=7)
-ggplot(dv_over_time_df[dv_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_line() + labs(x="Date", y="Number of Complaints", title="311 Data on Derelict Vehicle Complaints Over Time", subtitle="Jan 2018 - July 2023") + theme_nycc() 
-ggsave(filename = "dv_over_time.png", path = "visuals", width=10, height=7)
+# ---- Derelict vehicles over time: plot
+ggplot(dv_over_time_df[dv_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_line() + labs(x="Date", y="Number of Complaints", title="311 Data on Derelict Vehicle Complaints Over Time", subtitle="Jan 2018 - July 2023") + geom_vline(xintercept = 2020.25, col="dark grey") + theme_nycc()
+# ggsave(filename = "dv_over_time.png", path = "visuals", width=10, height=7)
 ```
 
 ```{r}
 # ---- Derelict vehicles by community district: table
 dv_by_cd_df <- dsny_311_dv %>% group_by(community_board) %>% summarise(n_comp=n())
-write.csv(dv_over_time_df, "data/output/dv_by_comm.csv")
+# write.csv(dv_over_time_df, "data/output/dv_by_comm.csv")
 ```
 
 -------------------
@@ -191,36 +179,33 @@ dep_311[, date_ym:=as.yearmon(created_date)]
 ```{r}
 # subset to complaints located at catch basins, contains catch basin in the description of complaint
 dep_311_cb <- dep_311[grepl("catch", dep_311$location_type, ignore.case = TRUE) | grepl("catch", dep_311$descriptor, ignore.case = TRUE),]
-dep_311_cb
 ```
 
 ```{r}
 # ---- Catch basin over time: table
 cb_over_time_df <- dep_311_cb %>% group_by(date_ym) %>% summarise(n_comp=n())
 cb_over_time_df
-write.csv(cb_over_time_df, "data/output/cb_over_time.csv")
+# write.csv(cb_over_time_df, "data/output/cb_over_time.csv")
 ```
 
 ```{r}
 # ---- Catch basin over time: plot
-ggplot(cb_over_time_df[cb_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_smooth(method="loess", se=FALSE) + labs(x="Date", y="Number of Complaints", title="311 Data on Catch Basin Complaints Over Time", subtitle="Jan 2018 - July 2023 \nData includes complaints located at catch basins or containing 'catch basin' in desc.") + theme_nycc()
-ggsave(filename = "cb_over_time_smooth.png", path = "visuals", width=10, height=7)
 ggplot(cb_over_time_df[cb_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym, y=n_comp)) + geom_line() + labs(x="Date", y="Number of Complaints", title="311 Data on Catch Basin Complaints Over Time", subtitle="Jan 2018 - July 2023 \nData includes complaints located at catch basins or containing 'catch basin' in desc.") + theme_nycc() 
-ggsave(filename = "cb_over_time.png", path = "visuals", width=10, height=7)
+# ggsave(filename = "cb_over_time.png", path = "visuals", width=10, height=7)
 ```
 
 ```{r}
 # ---- Catch basin by community district: table
 cb_by_cd_df <- dep_311_cb %>% group_by(community_board) %>% summarise(n_comp=n())
-write.csv(cb_by_cd_df, "data/output/cb_by_comm.csv")
+# write.csv(cb_by_cd_df, "data/output/cb_by_comm.csv")
 ```
 
 #### YELLOW AND BROWN GREASE ####
 
 ```{r}
 dep_311_grease <- dep_311[grepl("grease", dep_311$descriptor, ignore.case = TRUE),]
-dep_311_grease
-write.csv(dep_311_grease, "data/output/all_grease_data.csv")
+# dep_311_grease
+# write.csv(dep_311_grease, "data/output/all_grease_data.csv")
 ```
 
 
