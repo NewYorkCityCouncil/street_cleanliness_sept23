@@ -87,7 +87,7 @@ dsny_311_biz <-
 # oath <- fread("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999")
 oath <-
   fread(
-    "https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=issuing_agency%20like%20%27%25SANITATION%25%27%20and%20violation_date%20%3E=%20%272018-01-01%27"
+    "https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=issuing_agency%20like%20%27%25SANITATION%25%27%20and%20violation_date%20%3E=%20%272021-08-01%27"
   )
 
 descs <- unique(oath$charge_1_code_description)
@@ -150,12 +150,12 @@ wdt[, .N, by = c("id", "unique_key")][order(N, decreasing = T)]
 # biz per geom/# cmplnts per geom
 wdt[, n_bz := length(unique(bbl)), by = "id"]
 wdt[, n_cmp := length(unique(unique_key)), by = "id"]
-wdt[, cmp_2_biz := 10 *round(n_cmp / n_bz, 2)]
+wdt[, cmp_2_biz := 100 *round(n_cmp / n_bz, 2)]
 wdt[, cmpt := ifelse(nchar(unique_key)==8, 1, 0), by = "id"]
-wdt[, vio := ifelse(nchar(unique_key)==8, 1, 0), by = "id"]
+wdt[, vio := ifelse(nchar(unique_key) > 8, 1, 0), by = "id"]
 
 
-# zip: 'https://data.cityofnewyork.us/download/2v4z-66xt/application%2Fx-zip-compressed'
+# grab streets from LIONS; zip: 'https://data.cityofnewyork.us/download/2v4z-66xt/application%2Fx-zip-compressed'
 dcm <- st_read("data/input/DCM_ArterialsMajorStreets.shp", "DCM_ArterialsMajorStreets") %>% 
   st_as_sf(crs = 4326) %>% 
   st_transform(2263)
@@ -169,14 +169,14 @@ summary(wdt_sf$cmp_2_biz)
 hist(wdt_sf$cmp_2_biz)
 quantile(wdt_sf$cmp_2_biz, .95)
 
-badbz <- wdt[cmp_2_biz > 30, .(geometry, cmp_2_biz, n_cmp,
+badbz <- wdt[cmp_2_biz > 33, .(geometry, cmp_2_biz, n_cmp,
                   n_bz, id)] %>%
   distinct() %>%
   st_as_sf() 
 
 
 bad_sts_bz <- st_intersection(dcm, badbz)
-mapview::mapview(bad_sts_bz)
+mapview::mapview(bad_sts_bz, z="cmp_2_biz")
 
 pal <-
   leaflet::colorQuantile(
@@ -209,7 +209,7 @@ m_biz <- leaflet() %>%
              '</span>')
     },
     position = "topleft",
-    title = "Complaints/Violations <br/> for every 10 Businesses"
+    title = "Complaints/Violations <br/> for every 100 Businesses"
   )
 m_biz
 mapview::mapshot(m_biz, "visuals/dsny_biz_cmplts_2022-sept2023.html")
