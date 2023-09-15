@@ -119,7 +119,7 @@ oath_sub[, bbl := paste0(boro,
                          str_pad(block, 5, "left", pad = 0),
                          str_pad(lot, 4, "left", pad = 0))]
 
-# rm(oath)
+rm(oath)
 # get lat and lon from pluto
 pluto <-
   fread(
@@ -155,6 +155,7 @@ wdt[, cmpt := ifelse(nchar(unique_key)==8, 1, 0), by = "id"]
 wdt[, vio := ifelse(nchar(unique_key) > 8, 1, 0), by = "id"]
 
 # grab streets from LIONS; zip: 'https://data.cityofnewyork.us/download/2v4z-66xt/application%2Fx-zip-compressed'
+# to understand geography better
 dcm <- st_read("data/input/DCM_ArterialsMajorStreets.shp", "DCM_ArterialsMajorStreets") %>% 
   st_as_sf(crs = 4326) %>% 
   st_transform(2263)

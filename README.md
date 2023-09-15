@@ -57,8 +57,12 @@ Our timeframe for the analysis is from August 1, 2022 - August 31, 2023.
 - Normalized the aggregated counts by the total number of properties facing, associated with, or that matched to the street.
   
 ###### Commercial Waste & Businesses
-[Fill in]
+- Using DCA, Vacant Storefronts and Restaurant Inspections data, we created a data set of businesses
+- Using 311 data, subsetting to DSNY and commercial disposal/complaints data from August 2022 - present, we created a data set of violations and complaints related to businesses.
+- We created 2000 ft hexagons and grouped both complaints and bussinesses within each hexagon
+- We calculated the density of complaints and violations per business for each hexagon
 
 ###### Littering Complaints & Baskets
-[Fill in]
+- Using a similar methodology as above, we gathered litter basket data and  litter basket 311 complaints, we grouped both by 2000 ft hexagons and calculated the density of complaints per litter basket for every hexagon.
+
 #### Scripts
