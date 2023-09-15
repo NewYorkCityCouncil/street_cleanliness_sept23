@@ -27,7 +27,7 @@ rm(lion)
 
 lion_bit_clean <- lion_bit %>% 
   mutate(id= paste0(Street,SegmentID, SegCount,XFrom, YFrom, SHAPE)) %>% 
-  filter(!duplicated(id)) # some issue with distinct
+  filter(!duplicated(id)) # some issue with distinct, remove dups
 
 # lion_bit_bx <-lion_bit_clean %>% filter(Street =="CLAY AVENUE" )
 # a check for multicurve issue

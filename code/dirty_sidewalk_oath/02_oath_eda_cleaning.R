@@ -6,7 +6,7 @@
 source('code/00_load_dependencies.R')
 # quick summary/eda look at the dataset -------------
 options(scipen = 999)
-skimr::skim(raw_oath_cats)
+skimr::skim(raw_oath_cats) #raw_oath_cats from 01_oath file
 t <- sort(table(raw_oath_cats$relevant_charge), decreasing = T)
 prop.table(t)*100
 

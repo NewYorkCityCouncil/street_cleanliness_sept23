@@ -48,7 +48,7 @@ plot <- df %>%
 plot %>% gtsave("visuals/dirtiest_streets_per_bbl.html")
 
 # raw numbers table
-df1 <- lion_vios1 %>% 
+df1 <- lion_vios %>% 
   arrange(desc(total)) %>% ungroup() %>% as.data.frame() %>% 
   select(full_address, boro,vios_per_bbl, total, n)  %>% 
   mutate(vios_per_bbl = round(vios_per_bbl,1),

@@ -1,6 +1,8 @@
 ############################################################
 # Pull from API each category's codes to get all OATH violations, not just issued by Sanitation
 #####################################################
+
+source('code/00_load_dependencies.R')
 cats <- read_csv("data/output/oath_codes/oath_charges_grouped.csv")
 
 # combine codes into groupings --------------
@@ -43,18 +45,19 @@ litter_code <- cats_r$charge_1_code[which(
   cats_r$relevant_charge %in% c('debris', 'littering','spills'))]
 paste0(unlist(strsplit(litter_code, " , ")), collapse = "' , '")
 
+# encoded
 litter_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272022-08-01T00:00:00%27%20AND%20charge_1_code%20in(%27AS08%27%20,%20%27AS19%27%20,%20%27AS22%27%20,%20%27AS9C%27%20,%20%27AS9D%27%20,%20%27AS03%27%20,%20%27AS04%27%20,%20%27AS05%27%20,%20%27AS3C%27%20,%20%27AS09%27%20,%20%27AS9A%27%20,%20%27AS9B%27%20,%20%27AFK2%27%20,%20%27AFZ5%27%20,%20%27AH3I%27%20,%20%27AK09%27%20,%20%27AS3F%27%20,%20%27ASF3%27)")
 
 littering <- vroom(litter_url, col_select = c(1:15,23:24,34:42))
 littering$category <- rep('Littering', nrow(littering))
 
 
-
 # 3: abandoned vehicle ----------------
 
 aband_vech_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272022-08-01T00:00:00%27%20AND%20charge_1_code%20in(%27AV01%27,%27AS24%27)")
-#using abandoning & disabled vehicle codes
-#disabled vehicle code found by using the query api function commented out below
+# using abandoning & disabled vehicle codes
+# disabled vehicle code found by using the query api function commented out below
+
 # search_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272018-01-01T00:00:00%27&$q=vehicle")
 
 abandoned_vec <- vroom(aband_vech_url, col_select = c(1:15,23:24,34:42))
@@ -67,6 +70,7 @@ dirty_sidewalk_code <- cats_r$charge_1_code[which(
   cats_r$relevant_charge %in% c('dirty sidewalk'))]
 paste0(unlist(strsplit(dirty_sidewalk_code, " , ")), collapse = "' , '")
 
+# encoded
 dirty_sidewalk_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272022-08-01T00:00:00%27%20AND%20charge_1_code%20in(%27AS06%27%20,%20%27AS26%27%20,%20%27AS6M%27%20,%20%27AS6V%27%20,%20%27AS8V%27%20,%20%27AS97%27%20,%20%27AT12%27%20,%20%27AT13%27)")
 
 dirty_sidewalk <- vroom(dirty_sidewalk_url, col_select = c(1:15,23:24,34:42))
@@ -87,7 +91,7 @@ all_vios <- rbind(dirty_sidewalk, illegal_dumping, abandoned_vec, littering) %>%
            violation_location_borough == "MANHATTAN" ~ 1, 
            violation_location_borough == "STATEN IS" ~ 5, 
            TRUE ~ 0
-         ), 
+         ), # recode boros for bbl
          bbl = paste0(borough, block, lot), # create bbl column
          year = year(violation_date), # year month
          month = floor_date(as_date(violation_date), "month"))
@@ -95,7 +99,7 @@ all_vios <- rbind(dirty_sidewalk, illegal_dumping, abandoned_vec, littering) %>%
 # quick eda check
 table(all_vios$year)
 
-# ~5% missing
+# ~1.6% missing bbl
 missing_bbl <- all_vios %>% filter(bbl %in% bbl[nchar(bbl)<10])
 skim(missing_bbl)
 
