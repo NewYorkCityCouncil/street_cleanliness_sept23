@@ -6,8 +6,11 @@ library(readr)
 library(data.table)
 library(councildown)
 
-# accompanying interactive plots to 01_311_initial_request.Rmd
-# you don't have to run the first file if you just want the interactive plots
+# 311 interactive plots
+
+# separate but related to 01_311_initial_request.Rmd
+# you don't have to run the first file if you just want the interactive plots,
+# a lot of it is redundant
 
 dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2018-01-01'&$limit=999999999999")
 setDT(dsny_311)
