@@ -1,19 +1,14 @@
-# quick summary/eda look at the dataset -------------
-# options(scipen = 999)
-# skimr::skim(raw_oath_cats)
-# t <- sort(table(raw_oath_cats$relevant_charge), decreasing = T)
-# prop.table(t)*100
+###########################################################
+# YOU CAN SKIP THIS FILE
+# RUN THIS PART ONLY TO GO OVER EDA !!!
+##########################################################
 
-# may be worth pulling oath violations by identified charge codes in case issuing agency is mislabeled
-# - dirty sidewalk makes about 60% of sanitation violations, 
-# - rats, abandoned vehicle make less than 0.001%
-# - illegal dumping makes 0.3%
-#
-# - drop violation_location_floor, violation_description 100% missing
-# - there are no dup oaths 100% unique
-# - 5% of entries missing bbls info
-# - 1% missing address info
-# - 2% missing zipcode
+source('code/00_load_dependencies.R')
+# quick summary/eda look at the dataset -------------
+options(scipen = 999)
+skimr::skim(raw_oath_cats)
+t <- sort(table(raw_oath_cats$relevant_charge), decreasing = T)
+prop.table(t)*100
 
 
 prep_oath <- raw_oath_cats %>% 
@@ -39,4 +34,28 @@ prep_oath <- raw_oath_cats %>%
 missing_bbl <- prep_oath %>% filter(bbl %in% bbl[nchar(bbl)<10])
 skimr::skim(missing_bbl)
 
+
+##############################
+## EDA TAKEAWAYS !!!!!!!! -------------
+
 # half have house number and 99% have street number, maybe can get street centriod
+#  may be worth pulling oath violations by identified charge codes in case issuing agency is mislabeled or other agencies give out sanitation related violations as well
+
+# - dirty sidewalk makes about 60% of sanitation violations, 
+# - rats, abandoned vehicle make less than 0.001%
+# - illegal dumping makes 0.3%
+#
+# - drop violation_location_floor, violation_description 100% missing
+# - there are no dup oaths, 100% unique
+# - 5% of entries missing bbl info
+# - 1% missing address info
+# - 2% missing zipcode
+
+# check all vios to sanitation subset to see if there are different trends
+master_vios <- vroom("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272018-01-01T00:00:00%27&$select=violation_date,date_extract_y(violation_date)", delim = ",")
+
+master_vios_clean <-master_vios %>% 
+  filter(date_extract_y_violation_date<=2023) %>% 
+  mutate(month = floor_date(as_date(violation_date), "month"))
+
+table(master_vios_clean$date_extract_y_violation_date)
