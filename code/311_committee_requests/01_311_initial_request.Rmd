@@ -87,7 +87,7 @@ od_dl_sub <- unique(od_dl_sub)
 
 ```{r}
 # ---- Street cleanliness over time: plot
-ggplot(od_dl_sub[od_dl_sub$date_ym < "2023-09-01"], aes(x= date_ym, y=n_comp, color=complaint_type), group=complaint_type) + geom_line() + 
+ggplot(od_dl_sub, aes(x= date_ym, y=n_comp, color=complaint_type), group=complaint_type) + geom_line() + 
   theme_bw() + labs(x="Date", y="Number of Complaints", title="311 Data on Street Cleanliness Complaints Over Time", 
                     subtitle="Jan 2018 - July 2023", colour="Complaint type") + theme_nycc()
 # ggsave(filename = "clean_over_time.png", path = "visuals", width=10, height=7)
@@ -100,6 +100,7 @@ clean_over_time_df <- dcast(melt(as.data.table(od_dl_sub[od_dl_sub$date_ym < "20
                                  id.vars = c("complaint_type", "date_ym")), 
                             date_ym + variable ~ complaint_type, value.var = "value") %>%
   select(date_ym, `Dirty Conditions`, `Missed Collection`, `Sanitation Condition`)
+clean_over_time_df
 # write.csv(clean_over_time_df, "data/output/clean_over_time.csv")
 ```
 
@@ -108,6 +109,7 @@ clean_over_time_df <- dcast(melt(as.data.table(od_dl_sub[od_dl_sub$date_ym < "20
 clean_by_cd_df <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Sanitation Condition")] %>%
   group_by(community_board) %>% 
   summarise(count=n())
+clean_by_cd_df
 # write.csv(clean_by_cd_df, "data/output/clean_by_comm.csv")
 ```
 
@@ -122,6 +124,7 @@ dsny_311_id <- dsny_311[dsny_311$complaint_type == "Illegal Dumping",]
 ```{r}
 # ---- Illegal dumping over time: table
 id_over_time_df <- dsny_311_id %>% group_by(date_ym) %>% summarise(n_comp=n())
+id_over_time_df
 # write.csv(id_over_time_df, "data/output/id_over_time.csv")
 ```
 
@@ -134,6 +137,7 @@ ggplot(id_over_time_df[id_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym,
 ```{r}
 # ---- Illegal dumping by community district: table
 id_by_cd_df <- dsny_311_id %>% group_by(community_board) %>% summarise(n_comp=n())
+id_by_cd_df
 # write.csv(id_by_cd_df, "data/output/id_by_comm.csv")
 ```
 
@@ -147,6 +151,7 @@ dsny_311_dv <- dsny_311[dsny_311$complaint_type == "Derelict Vehicles",]
 ```{r}
 # ---- Derelict vehicles over time: table
 dv_over_time_df <- dsny_311_dv %>% group_by(date_ym) %>% summarise(n_comp=n())
+dv_over_time_df
 # write.csv(dv_over_time_df, "data/output/dv_over_time.csv")
 ```
 
@@ -159,6 +164,7 @@ ggplot(dv_over_time_df[dv_over_time_df$date_ym < "2023-09-01",], aes(x= date_ym,
 ```{r}
 # ---- Derelict vehicles by community district: table
 dv_by_cd_df <- dsny_311_dv %>% group_by(community_board) %>% summarise(n_comp=n())
+dv_by_cd_df
 # write.csv(dv_over_time_df, "data/output/dv_by_comm.csv")
 ```
 
@@ -204,7 +210,7 @@ cb_by_cd_df <- dep_311_cb %>% group_by(community_board) %>% summarise(n_comp=n()
 
 ```{r}
 dep_311_grease <- dep_311[grepl("grease", dep_311$descriptor, ignore.case = TRUE),]
-# dep_311_grease
+dep_311_grease
 # write.csv(dep_311_grease, "data/output/all_grease_data.csv")
 ```
 
