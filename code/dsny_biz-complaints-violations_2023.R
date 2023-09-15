@@ -177,6 +177,7 @@ badbz <- wdt[cmp_2_biz > 33, .(geometry, cmp_2_biz, n_cmp,
 bad_sts_bz <- st_intersection(dcm, badbz)
 mapview::mapview(bad_sts_bz, z="cmp_2_biz")
 
+# map biz complaints per biz ----------------------------------------------
 pal <-
   leaflet::colorQuantile(
     palette = pal_nycc("warm"),
