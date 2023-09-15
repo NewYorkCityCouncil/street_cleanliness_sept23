@@ -58,8 +58,16 @@ pad_vios <- all_vios_bbl %>%
          boro = boro) %>% 
   distinct(segid, .keep_all = T)
 
+# get total bbl counts for each segment id for normalizing
+segs_4_pluto <- lion_bit_clean %>% 
+  left_join(pad_vios, by= c('SegmentID'='segid'), keep = T) %>% 
+  filter(!is.na(segid) & total!=0) %>% st_drop_geometry() %>% 
+  distinct(segid) %>% select(segid) %>% 
+  left_join(pad %>% select(bbl, segid), by = c('segid')) %>% 
+  group_by(segid) %>% count()
+
 # JOINT TO LION (street segments). Remove streets with no violations
-lion_vios1 <- lion_bit_clean %>% 
+lion_vios <- lion_bit_clean %>% 
    left_join(pad_vios, by= c('SegmentID'='segid'), keep = T) %>% 
    filter(!is.na(segid) & total!=0) %>% 
   st_drop_geometry() %>% 
@@ -79,21 +87,13 @@ lion_vios1 <- lion_bit_clean %>%
                                   TRUE ~ clean_hyphen),
          full_address = paste(clean_hyphen, Street)) 
   
-# get total bbl counts for each segment id for normalizing
-segs_4_pluto <- lion_bit_clean %>% 
-  left_join(pad_vios, by= c('SegmentID'='segid'), keep = T) %>% 
-  filter(!is.na(segid) & total!=0) %>% st_drop_geometry() %>% 
-  distinct(segid) %>% select(segid) %>% 
-  left_join(pad %>% select(bbl, segid), by = c('segid')) %>% 
-  group_by(segid) %>% count()
 
 # quick map check
-mapview(all_vios.shp %>% 
-          filter(year==2022 & category=="dirty sidewalk"), 
-        zcol = "category", col.regions = pal_nycc(), legend = TRUE,
-        alpha.regions = 0.01, cex=2, lwd=0.01)
+# mapview(all_vios.shp %>% 
+#           filter(year==2022 & category=="dirty sidewalk"), 
+#         zcol = "category", col.regions = pal_nycc(), legend = TRUE,
+#         alpha.regions = 0.01, cex=2, lwd=0.01)
 
-
-lion$types <- as.data.frame(st_geometry_type(lion))
-
-lion_curve <- lion %>% filter(types=="MULTICURVE")
+# muticurve troubleshooting
+# lion$types <- as.data.frame(st_geometry_type(lion))
+# lion_curve <- lion %>% filter(types=="MULTICURVE")

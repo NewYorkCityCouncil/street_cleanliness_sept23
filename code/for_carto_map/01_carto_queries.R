@@ -55,7 +55,6 @@ carto_311<- sanitation_311_carto %>%
     TRUE ~ complaint_type)) %>% 
   filter(complaint_type != "Street Sweeping Complaint")
   
-carto_aggregate
 
-write_csv(sanitation_311_carto, 'data/output/for_carto_311_sanitation.csv')
-
+#write_csv(carto_311, 'data/output/for_carto_311_sanitation.csv')
+#not pushed to github due to large size
