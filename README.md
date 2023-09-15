@@ -5,13 +5,16 @@ An associated webpage for this analysis can be found on the [council website](ht
 
 ***  
 
-#### Data Sources 
+#### Open Data Sources 
 - [Vacant storefront registration](https://data.cityofnewyork.us/City-Government/Storefronts-Reported-Vacant-or-Not/92iy-9c3n)
 - [DCA licenses](https://nycopendata.socrata.com/Business/Legally-Operating-Businesses/w7w3-xahh/data)
 - [Restaurants](https://data.cityofnewyork.us/Health/DOHMH-New-York-City-Restaurant-Inspection-Results/43nn-pn8j)
 - [OATH Violations](https://data.cityofnewyork.us/City-Government/OATH-Hearings-Division-Case-Status/jz4z-kudi)
 - [311 Complaints](https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9)
 - [DSNY Litter Baskets](https://data.cityofnewyork.us/dataset/DSNY-Litter-Basket-Inventory/8znf-7b2c)
+- [LION](https://data.cityofnewyork.us/City-Government/LION/2v4z-66xt)
+- [PLUTO](https://data.cityofnewyork.us/City-Government/Primary-Land-Use-Tax-Lot-Output-PLUTO-/64uk-42ks)
+- [PAD](https://data.cityofnewyork.us/City-Government/Property-Address-Directory/bc8t-ecyu)
 
 
 ##### Summary & Intention
