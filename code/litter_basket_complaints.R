@@ -24,6 +24,7 @@ lbcomp_sf <- dsny_sub[complaint_type %in% litter_complaints, .(location, unique_
   st_as_sf(wkt = "location", crs = 4326) %>% 
   st_transform(2263) 
 
+
 # litter baskets ----------------------------------------------------------
 # get litter basket locations, buffer and create polygon
 lburl <- "https://data.cityofnewyork.us/api/geospatial/8znf-7b2c?accessType=DOWNLOAD&method=export&format=Shapefile"
@@ -48,12 +49,25 @@ lb_comp_hex_dt <- lb_hex %>%
   as.data.table()
   
 lbdt_sub <- lb_comp_hex_dt[!is.na(basketid) & !is.na(unique_key), ]
+lbdt_sub$basketid <- as.character(lbdt_sub$basketid)
 
 lbdt_sub[, n_lbs := length(unique(basketid)), by = "id"]
 lbdt_sub[, n_complts :=  length(unique(unique_key)), by = "id"]
-
 lbdt_sub[, comps_per_lb := n_complts/n_lbs]
-unique(lbdt_sub$comps_per_lb)
+summary(lbdt_sub$comps_per_lb)
+bad_lbs <- lbdt_sub[comps_per_lb > 15, .(id, geometry, comps_per_lb)] 
+quantile(lbdt_sub$comps_per_lb, .9)
+bdsf <- bad_lbs %>% 
+  distinct() %>% 
+  st_as_sf() 
+  
+
+dcm <- st_read("data/input/DCM_ArterialsMajorStreets.shp", "DCM_ArterialsMajorStreets") %>% 
+  st_as_sf(crs = 4326) %>% 
+  st_transform(2263)
+
+bad_sts <- st_intersection(dcm, bdsf)
+mapview::mapview(bad_sts)
 
 # pull out streets or some location info (lions)
 # get centroid of hexbin -- get streets 
@@ -62,6 +76,7 @@ sub_sf <- lbdt_sub[, .(comps_per_lb, geometry)] %>%
   distinct() %>% 
   st_as_sf() %>% 
   st_transform('+proj=longlat +datum=WGS84') 
+
 
 # check distribution - very skewed
 plot(density(sub_sf$comps_per_lb, na.rm = T))
@@ -87,9 +102,6 @@ m_lb <- leaflet() %>%
  mapview::mapshot(m_lb, "visuals/lb_desserts.html")
 
 
-
-
-
 # sanitation zones --------------------------------------------------------
 # szurl <- "https://data.cityofnewyork.us/api/geospatial/ak2e-nbe8?method=export&format=Shapefile"
 # szz <- unzip_sf(szurl)
@@ -103,5 +115,29 @@ m_lb <- leaflet() %>%
  
  
 # dsny_sub[descriptor %in% litter_desc, unique(complaint_type)]
-
-
+ # lions shape -------------------------------------------------------------
+ # get zip from:
+ # "https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/dcm_20230731shp.zip"
+ 
+ # lion <- read_sf("data/lion/lion.gdb/", "lion") 
+ # lion$types <- as.character(st_geometry_type(lion$SHAPE))
+ # 
+ # fix_geom<-lion
+ # fixed=c()
+ # for(i in 1:dim(fix_geom)[1]){
+ #   fix_geom$SHAPE[i]=st_cast(fix_geom$SHAPE[i], "MULTILINESTRING")
+ # }
+ # 
+ # 
+ # 
+ # 
+ # 
+ # cast_all <- function(xg) {
+ #   lapply(c("MULTIPOLYGON", "MULTILINESTRING", "MULTIPOINT", "POLYGON", "LINESTRING", "POINT"), 
+ #          function(x) st_cast(xg, x))
+ # }
+ # 
+ # cast_all(multis$SHAPE)
+ # 
+ # badlion <- st_join(bad_lbs, multissf)
+ # 

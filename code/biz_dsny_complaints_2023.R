@@ -1,7 +1,4 @@
 source("code/00_load_dependencies.R")
-library(councilverse)
-sf_use_s2(FALSE)
-
 b_url <-
   "https://data.cityofnewyork.us/api/geospatial/tqmj-j8zm?method=export&format=Shapefile"
 boro_zip <- unzip_sf(b_url)
@@ -13,6 +10,7 @@ boro_sf <- st_read(boro_zip) %>%
 ## Sanitation Hearing 9/26/23
 ## Brook Frye
 
+# using vacant storefront data, dca, restaurant data for businesses --------------------------------------------
 # restaurant data  -------------------------------------------------------------
 rest <-
   fread("https://data.cityofnewyork.us/resource/43nn-pn8j.csv?$limit=9999999999")
@@ -22,7 +20,7 @@ rest_sf <- rest_sub[!is.na(latitude),] %>%
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
 rm(rest)
 
-# using vacant storefront data & dca data for businesses --------------------------------------------
+# storefronts -------------------------------------------------------------
 vsd <-
   fread("https://data.cityofnewyork.us/resource/92iy-9c3n.csv?$limit=9999999999")
 vsd_sub <- unique(vsd[, .(bbl = as.character(borough_block_lot),
@@ -31,9 +29,10 @@ vsd_sf <- vsd_sub[!is.na(latitude),] %>%
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
 rm(vsd)
 
-# dca data
+# dca ---------------------------------------------------------------------
 biz <-
   fread("https://data.cityofnewyork.us/resource/p2mh-mrfv.csv?$limit=999999")
+
 # subset down
 biz_sub <-
   unique(biz[license_type %in% "Business" &
@@ -46,7 +45,8 @@ biz_sf <-  biz_sub %>%
   st_as_sf(wkt = "geometry", crs = 4326)
 rm(biz)
 
-# concat
+
+# rbind all biz data ------------------------------------------------------
 big_biz <- rbind(vsd_sf, biz_sf)
 big_biz2 <- rbind(big_biz, rest_sf)
 bigbiz_sf <- st_as_sf(big_biz2, crs = 4326) %>%
@@ -62,7 +62,7 @@ bizhex <-  boro_sf %>%
   mutate(id = row_number()) %>%
   st_join(bigbiz_sf)
 
-# biz w complaints
+# join with 311 complaints
 dsny_311 <-
   fread(
     "https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2022-08-01'&$limit=999999999999"
@@ -83,7 +83,7 @@ dsny_311_biz <-
   st_as_sf(wkt = "location", crs = 4326) %>%
   st_transform(2263)
 
-# oath violations businesses ----------------------------------------------
+# oath violations  ----------------------------------------------
 # oath <- fread("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999")
 oath <-
   fread(
@@ -154,7 +154,6 @@ wdt[, cmp_2_biz := 100 *round(n_cmp / n_bz, 2)]
 wdt[, cmpt := ifelse(nchar(unique_key)==8, 1, 0), by = "id"]
 wdt[, vio := ifelse(nchar(unique_key) > 8, 1, 0), by = "id"]
 
-
 # grab streets from LIONS; zip: 'https://data.cityofnewyork.us/download/2v4z-66xt/application%2Fx-zip-compressed'
 dcm <- st_read("data/input/DCM_ArterialsMajorStreets.shp", "DCM_ArterialsMajorStreets") %>% 
   st_as_sf(crs = 4326) %>% 
@@ -163,7 +162,8 @@ dcm <- st_read("data/input/DCM_ArterialsMajorStreets.shp", "DCM_ArterialsMajorSt
 wdt_sf <- wdt[, .(geometry, cmp_2_biz, n_cmp,
                   n_bz, id)] %>%
   distinct() %>%
-  st_as_sf() 
+  st_as_sf() %>% 
+  st_transform("+proj=longlat +datum=WGS84")
 
 summary(wdt_sf$cmp_2_biz)
 hist(wdt_sf$cmp_2_biz)
@@ -173,7 +173,6 @@ badbz <- wdt[cmp_2_biz > 33, .(geometry, cmp_2_biz, n_cmp,
                   n_bz, id)] %>%
   distinct() %>%
   st_as_sf() 
-
 
 bad_sts_bz <- st_intersection(dcm, badbz)
 mapview::mapview(bad_sts_bz, z="cmp_2_biz")
