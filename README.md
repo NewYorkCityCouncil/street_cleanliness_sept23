@@ -39,4 +39,23 @@ To address this issue, the Committee on Sanitation and Solid Waste Management wi
 - Removal of abandoned or derelict vehicles. [Read the bill: Int 1032-2023](https://nyc.legistar.com/LegislationDetail.aspx?ID=6202973&GUID=F6F6C2DF-857C-4815-9605-42A165DF4BFD&G=2FD004F1-D85B-4588-A648-0A736C77D6E3&Options=&Search=)
 
 #### Methodology 
+Our timeframe for the analysis is from August 1, 2022 - August 31, 2023.
+
+###### Street Cleanliness Categories
+[Fill in]
+
+###### Dirtiest Streets: Streets with the Highest Number of Dirty Sidewalk/Littering OATH Violations
+- Using the API, we queried all violations issued by Sanitation and then manually grouped similar charge_1 codes into categories. The complete list of charge codes that were grouped is available [here](https://github.com/NewYorkCityCouncil/street_cleanliness_sept23/blob/main/data/output/oath_codes/oath_charges_grouped.csv).
+- The charge_1 codes for Dirty Sidewalk and Littering were used to pull any violations not captured by just querying the issuing agency.
+- Joined violations to the property boro, block & lot dataset (PLUTO) to get lat/long for mapping.
+- Joined to the property addresses dataset (PAD) to get the street segment id which is needed to then join to the streets (LION) data.
+- Aggregated the yearly number of violations to each street. (Dirty Sidewalk/Littering Violations --> BBL --> PAD --> Streets)
+- Removed streets with no violations.
+- Normalized the aggregated counts by the total number of properties facing, associated with, or that matched to the street.
+  
+###### Commercial Waste & Businesses
+[Fill in]
+
+###### Littering Complaints & Baskets
+[Fill in]
 #### Scripts
