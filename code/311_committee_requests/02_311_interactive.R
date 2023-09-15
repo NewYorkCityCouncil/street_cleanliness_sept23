@@ -2,8 +2,22 @@ library(tidyverse)
 library(htmltools)
 library(ggiraph)
 library(zoo)
+library(readr)
+library(data.table)
+library(councildown)
 
-# run 01_311_inital_request.Rmd first
+# accompanying interactive plots to 01_311_initial_request.Rmd
+# you don't have to run the first file if you just want the interactive plots
+
+dsny_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DSNY'&$where=created_date>='2018-01-01'&$limit=999999999999")
+setDT(dsny_311)
+dsny_311[, created_date := as.Date(created_date)][, yr := year(created_date)][, mo := month(created_date)]
+dsny_311[, date_ym:=as.yearmon(created_date)]
+
+dep_311 <- fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?agency='DEP'&$where=created_date>='2018-01-01'&$limit=999999999999")
+setDT(dep_311)
+dep_311[, created_date := as.Date(created_date)][, yr := year(created_date)][, mo := month(created_date)]
+dep_311[, date_ym:=as.yearmon(created_date)]
 
 # ---- street cleanliness 
 od_dl <- dsny_311
@@ -11,7 +25,7 @@ od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition", "Di
 od_dl[grepl("Litter", complaint_type, ignore.case = TRUE) | grepl("litter", descriptor, ignore.case = TRUE), complaint_type := "Litter"]
 od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Litter")]
 # > sum((od_dl_sub[od_dl_sub$date_ym > "2022-08-01" & od_dl_sub$complaint_type == "Dirty Conditions",])$n_comp)
-# [1] 47537 - from old version, littering adds ~10k
+# [1] 47537 - from old version, littering adds ~3k
 
 od_dl_sub[, n_comp := .N, by = c("complaint_type", "date_ym")] # count by complaint type, date
 od_dl_sub <- od_dl_sub[, .(complaint_type, date_ym, n_comp)] # subset to complaint type, date, n
@@ -114,6 +128,7 @@ id_interactive <- girafe(ggobj = id_plot,
                            ))
 # htmltools::save_html(id_interactive, "../visuals/id_complaints_citywide_line.html")
 
+dep_311_grease <- dep_311[grepl("grease", dep_311$descriptor, ignore.case = TRUE),]
 # yellow/brown grease
 grease_over_time_df <- dep_311_grease[dep_311_grease$date_ym >= "2022-08-01" & dep_311_grease$date_ym <= "2023-08-01",] %>% 
   group_by(date_ym) %>% 
