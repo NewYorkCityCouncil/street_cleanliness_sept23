@@ -1,6 +1,22 @@
-# read in each category's codes to get all OATH violations
+############################################################
+# Pull from API each category's codes to get all OATH violations, not just issued by Sanitation
+#####################################################
 
-source('code/01_oath_charges.R')
+
+
+# combine codes into groupings --------------
+cats <- read_csv("data/output/oath_charges_grouped.csv")
+cats_r <- cats %>% 
+  group_by(relevant_charge) %>% 
+  summarise(list_code = list(unique(charge_1_code)),
+            n_code = lengths(list_code),
+            charge_1_code = paste0(unlist(list(unique(charge_1_code))),collapse = " , "),
+            list_desc = list(unique(charge_1_code_description)),
+            n_desc = sum(n),
+            charge_1_code_description = paste0(unlist(list(
+              unique(charge_1_code_description))),collapse = " , "))  %>% as.data.frame()
+
+
 
 # side: improper use of dsny litter basket ------
 
@@ -66,7 +82,7 @@ rodent_clean <- rodent %>%
 
 # 4: storage receptacles & improper signage ---------
 storage_codes <- cats_r$charge_1_code[which(
-       cats_r$relevant_charge %in% c('storage receptacles', 'improper signage'))]
+  cats_r$relevant_charge %in% c('storage receptacles', 'improper signage'))]
 paste0(unlist(strsplit(storage_codes, " , ")), collapse = "' , '")
 
 storage_url <- c("https://data.cityofnewyork.us/resource/jz4z-kudi.csv?$limit=999999999999&$where=violation_date%3E=%272018-01-01T00:00:00%27%20AND%20charge_1_code%20in(%27AD06%27%20,%20%27AR03%27%20,%20%27AR14%27%20,%20%27AR25%27%20,%20%27AR36%27%20,%20%27AR44%27%20,%20%27AR7E%27%20,%20%27ARE7%27%20,%20%27ARF1%27%20,%20%27ARF4%27%20,%20%27ARF7%27%20,%20%27ARG1%27%20,%20%27ARG4%27%20,%20%27ARH4%27%20,%20%27ARH7%27%20,%20%27ARI1%27%20,%20%27ARI4%27%20,%20%27ASC1%27%20,%20%27ASGP%27%20,%20%27ASU1%27%20,%20%27ASU2%27%20,%20%27ASU3%27%20,%20%27ASV4%27%20,%20%27ASV5%27%20,%20%27ASV6%27%20,%20%27ASW4%27%20,%20%27ASW5%27%20,%20%27ASW6%27%20,%20%27AS18%27%20,%20%27ASP1%27%20,%20%27ASP7%27%20,%20%27ASZ4%27%20,%20%27ASZ7%27%20,%20%27ADC9%27%20,%20%27AR04%27%20,%20%27AR05%27%20,%20%27AR07%27%20,%20%27AR15%27%20,%20%27AR18%27%20,%20%27AR1F%27%20,%20%27AR1G%27%20,%20%27AR1J%27%20,%20%27AR26%27%20,%20%27AR4F%27%20,%20%27AS8C%27%20,%20%27AS8D%27%20,%20%27ASA9%27%20,%20%27ASAC%27%20,%20%27ASAF%27%20,%20%27ASAI%27%20,%20%27ASAL%27%20,%20%27ASAO%27%20,%20%27ASAR%27%20,%20%27ASAU%27%20,%20%27ASAX%27%20,%20%27ASC3%27%20,%20%27ASC4%27%20,%20%27ASC7%27%20,%20%27ASP2%27%20,%20%27ASP3%27%20,%20%27ASZ6%27%20,%20%27ASZ9%27)")
@@ -104,7 +120,7 @@ abandoned_vec <- vroom(aband_vech_url, col_select = c(1:15,23:24,34:42))
 abandoned_vec$category <- rep('abandoning vehicle', nrow(abandoned_vec))
 
 # 8: dirty sidewalk --------------
-  
+
 dirty_sidewalk_code <- cats_r$charge_1_code[which(
   cats_r$relevant_charge %in% c('dirty sidewalk'))]
 paste0(unlist(strsplit(dirty_sidewalk_code, " , ")), collapse = "' , '")
