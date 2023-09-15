@@ -38,7 +38,7 @@ pad_vios <- all_vios_bbl %>%
 
 # unzipped from 'https://data.cityofnewyork.us/download/2v4z-66xt/application%2Fx-zip-compressed'
 lion <- read_sf("lion/lion.gdb", "lion") %>%  st_as_sf() %>% 
-  st_cast("MULTILINESTRING") %>% 
+  #st_cast("MULTILINESTRING") %>% 
   st_transform("+proj=longlat +datum=WGS84") 
 
 # check & clean subset
@@ -91,3 +91,7 @@ mapview(all_vios.shp %>%
         zcol = "category", col.regions = pal_nycc(), legend = TRUE,
         alpha.regions = 0.01, cex=2, lwd=0.01)
 
+
+lion$types <- as.data.frame(st_geometry_type(lion))
+
+lion_curve <- lion %>% filter(types=="MULTICURVE")

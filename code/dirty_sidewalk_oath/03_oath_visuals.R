@@ -244,9 +244,10 @@ plot1 %>% gtsave("visuals/dirtiest_streets.html")
 # reference: https://github.com/r-spatial/sf/issues/2203#issuecomment-1634794519
 fix_geom<-lion_vios[grepl("list\\(list",lion_vios$id)==T,]
 fixed=c()
-for(i in 1:dim(fix_geom)[1]){
-  fix_geom$SHAPE[i]=st_cast(fix_geom$SHAPE[i], "MULTILINESTRING")
+for(i in 1:dim(lion_curve)[1]){
+  lion_curve$SHAPE[i]=st_cast(lion_curve$SHAPE[i], "MULTILINESTRING")
 }
+
 
 # bin cut offs based on quantiles
 cut_996 <- quantile(lion_vios.shp$vios_per_length,.996)
