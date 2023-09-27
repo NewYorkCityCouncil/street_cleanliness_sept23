@@ -4,23 +4,6 @@ output: html_document
 date: "2023-08-23"
 ---
 
-Good morning! Here's the 311 data you asked for on street cleanliness (DSNY), illegal dumping (DSNY), derelict vehicles (DSNY), and catch basin complaints (DEP). For catch basin complaints, this includes complaints located at catch basins as well complaints that had 'catch basin' in the complaint description. 
-
-For grease (DEP) - I couldn't find anything specifically on yellow and brown grease, but I've attached the complaints that contained the word 'grease' in the description. 
-
-```{r}
-library(tidyverse)
-library(ggplot2)
-library(dplyr)
-library(vroom)
-library(leaflet)
-library(leaflet.extras)
-library(janitor)
-library(data.table)
-library(zoo)
-library(councildown)
-```
-
 - 311 Data on Street Cleanliness Complaints Over Time and by Community District (We used similar data on in March 2022 hearing) 
 
 - 311 Data on Illegal Dumping 
@@ -31,6 +14,10 @@ library(councildown)
   subset to complaints located at catch basins, contains catch basin in the description of complaint
 
 - Any data available on the disposal of yellow and brown grease 
+
+```{r}
+source("../00_load_dependencies.R")
+```
 
 **Using 311 complaints available from 2018 and beyond:**
 
@@ -44,10 +31,6 @@ dsny_311[, created_date := as.Date(created_date)][, yr := year(created_date)][, 
 dsny_311[, date_ym:=as.yearmon(created_date)]
 ```
 
-```{r}
-# dsny_311 <- dsny_311 %>% filter(created_date >= "2022-08-01" & created_date < "2023-09-01")
-```
-
 #### STREET CLEANLINESS ####
 
 Using Brook's code from Feb 23.
@@ -57,13 +40,6 @@ od_dl <- dsny_311
 ```
 
 ```{r}
-# **NEW VERSION** let's group in a sensible way to reduce categories
-# od_dl[grepl("Litter", complaint_type, ignore.case = TRUE) | grepl("litter", descriptor, ignore.case = TRUE), complaint_type := "Litter"]
-# 
-# od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition", "Dirty"), complaint_type := "Dirty Conditions"]
-# 
-# od_dl_sub <- od_dl[complaint_type %in% c("Dirty Conditions", "Missed Collection", "Litter")]
-
 # **OLD VERSION**: let's group in a sensible way to reduce categories
 od_dl[complaint_type %in% "Missed Collection (All Materials)", complaint_type := "Missed Collection"]
 od_dl[complaint_type %in% c("Overflowing Litter Baskets", "Dirty Condition"), complaint_type := "Dirty Conditions"]
@@ -118,7 +94,6 @@ clean_by_cd_df
 ```{r}
 # subset DSNY complaints to illegal dumping
 dsny_311_id <- dsny_311[dsny_311$complaint_type == "Illegal Dumping",]
-# unique(dsny_311_id$complaint_type)
 ```
 
 ```{r}

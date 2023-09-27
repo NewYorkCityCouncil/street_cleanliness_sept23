@@ -59,6 +59,7 @@ complaint <- "Derelict Vehicles"
 type <- "311"
 df_3 <- data.frame(sum, complaint, type)
 
+# https://data.cityofnewyork.us/City-Government/OATH-Hearings-Division-Case-Status/jz4z-kudi
 sum <- c(3040, 208665, 927) # rose pulled from OATH
 complaint <- c("Derelict Vehicles", "Dirty Conditions", "Illegal Dumping")
 type <- "OATH"
