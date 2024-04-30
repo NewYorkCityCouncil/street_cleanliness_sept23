@@ -1,6 +1,6 @@
 source("code/00_load_dependencies.R")
 sf_use_s2(FALSE)
-
+library(htmlwidgets)
 
 ################################################################################
 # Created by: Anne Driscoll
@@ -179,3 +179,4 @@ map = leaflet(options = leafletOptions(attributionControl=FALSE,
                        opacity = 1, 
                        title = "# of 311 complaints <br> per 100 litter baskets <br> (Apr 23-Mar 24)") 
 mapview::mapshot(map, file="visuals/map_311_complaints_per100baskets.html")
+saveWidget(map, file="visuals/map_311_complaints_per100baskets.html")
