@@ -176,7 +176,6 @@ map = leaflet(options = leafletOptions(attributionControl=FALSE,
                        values = council_districts$complaints_per_business, 
                        opacity = 1, 
                        title = "# of 311 complaints <br> and OATH violations <br> per 100 businesses <br> (Apr 23-Mar 24)") 
-#mapview::mapshot(map, file=file.path("visuals", "map_311_oath_issues_per100businesses.html"))
 
 # ------------------------------------------------------------------------------
 # just oath violations
@@ -201,7 +200,7 @@ map = leaflet(options = leafletOptions(attributionControl=FALSE,
                        values = council_districts$oath_per_business, 
                        opacity = 1, 
                        title = "# of OATH violations <br> per 100 businesses <br> (Apr 23-Mar 24)") 
-mapview::mapshot(map, file="visuals/map_oath_violations_per100businesses.html")
+mapshot(map, file="visuals/map_oath_violations_per100businesses.html")
 
 # ------------------------------------------------------------------------------
 # just 311 complaints
