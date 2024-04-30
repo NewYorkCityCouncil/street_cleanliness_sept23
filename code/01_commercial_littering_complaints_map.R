@@ -1,4 +1,5 @@
 source("code/00_load_dependencies.R")
+library(htmlwidgets)
 
 ################################################################################
 # Created by: Brook Frye
@@ -201,6 +202,7 @@ map = leaflet(options = leafletOptions(attributionControl=FALSE,
                        opacity = 1, 
                        title = "# of OATH violations <br> per 100 businesses <br> (Apr 23-Mar 24)") 
 mapshot(map, file="visuals/map_oath_violations_per100businesses.html")
+saveWidget(map, file="visuals/map_oath_violations_per100businesses.html")
 
 # ------------------------------------------------------------------------------
 # just 311 complaints
