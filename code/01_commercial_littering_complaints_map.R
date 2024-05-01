@@ -121,7 +121,10 @@ new_filter_oath = oath %>%
         !grepl("RESIDENTIAL", charge_1_code_description), 
         !grepl("DWELLING UNITS", charge_1_code_description), 
         !grepl("VEHICLE", charge_1_code_description),  
-        !grepl("PUBLIC URINATION", charge_1_code_description)) %>%
+        !grepl("PUBLIC URINATION", charge_1_code_description)) %>% 
+        #!charge_1_code_description %in% c("FAILURE TO CLEAN 18 INCHES INTO STREET", 
+        #                                  "DIRTY SIDEWALK", 
+        #                                  "SIDEWALK OBSTRUCTION", "DIRTY AREA", "POSTING OF SIGN PERMIT", "STREET OBSTRUCTION")) %>%
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326) 
 
 
@@ -147,43 +150,21 @@ council_districts = council_districts %>%
          restaurant_count = restaurant_count_n, 
          businesses_count = businesses_count_n, 
          
-         oath_per_business = oath_count/(restaurant_count + businesses_count)*100, 
-         dsny_per_business = dsny_count/(restaurant_count + businesses_count)*100, 
-         complaints_per_business = (dsny_count + oath_count)/(restaurant_count + businesses_count)*100, 
+         oath_per_business = oath_count/(restaurant_count + businesses_count)*1000, 
+         dsny_per_business = dsny_count/(restaurant_count + businesses_count)*1000, 
+         complaints_per_business = (dsny_count + oath_count)/(restaurant_count + businesses_count)*1000, 
          tooltip = paste0("<strong>District:</strong> ", CounDist, 
                 "<br><strong>311 Complaints:</strong> ", dsny_count, 
                 "<br><strong>OATH Violations:</strong> ", oath_count, 
                 "<br><strong>Issues per 100 businesses:</strong> ", round(complaints_per_business, 2)))
 
 
-quantile(council_districts$complaints_per_business, seq(0, 1, length.out = 6))
-pal = councildown::colorBin(
-  palette = "warm",
-  bins = c(0, 5, 15, 25, 35, 65), 
-  domain = c(0, council_districts$complaints_per_business)
-) 
-
-map = leaflet(options = leafletOptions(attributionControl=FALSE, 
-                                       zoomControl = FALSE, 
-                                       minZoom = 10, 
-                                       maxZoom = 15)) %>%
-  addPolygons(data = council_districts, 
-              fillColor = ~pal(complaints_per_business), 
-              weight = 0, fillOpacity = 1, smoothFactor = 0, 
-              popup = ~tooltip) %>%
-  addCouncilStyle(add_dists = TRUE, 
-                  highlight_dists = council_districts$CounDist[council_districts$complaints_per_business > 35]) %>%
-  addLegend_decreasing(position = "topleft", pal,
-                       values = council_districts$complaints_per_business, 
-                       opacity = 1, 
-                       title = "# of 311 complaints <br> and OATH violations <br> per 100 businesses <br> (Apr 23-Mar 24)") 
-
 # ------------------------------------------------------------------------------
 # just oath violations
 quantile(council_districts$oath_per_business[council_districts$oath_per_business!= 0], seq(0, 1, length.out = 6))
 pal = councildown::colorBin(
   palette = "cool",
-  bins = c(0, 13, 18, 26, 40, 65), 
+  bins = c(0, 135, 175, 260, 400, 610), 
   domain = c(0, council_districts$oath_per_business)
 ) 
 
@@ -196,7 +177,7 @@ map = leaflet(options = leafletOptions(attributionControl=FALSE,
               weight = 0, fillOpacity = 1, smoothFactor = 0, 
               popup = ~tooltip) %>%
   addCouncilStyle(add_dists = TRUE, 
-                  highlight_dists = council_districts$CounDist[council_districts$oath_per_business > 26]) %>%
+                  highlight_dists = council_districts$CounDist[council_districts$oath_per_business > 400]) %>%
   addLegend_decreasing(position = "topleft", pal,
                        values = council_districts$oath_per_business, 
                        opacity = 1, 

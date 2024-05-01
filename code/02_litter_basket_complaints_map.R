@@ -27,8 +27,7 @@ basket_complaints = fread("https://data.cityofnewyork.us/resource/fhrw-4uyv.csv?
   
 # litter baskets ---------------------------------------------------------------
 baskets = st_read("https://data.cityofnewyork.us/resource/8znf-7b2c.geojson?$limit=999999") %>%
-  st_as_sf(crs = 4326) %>% 
-  select(basketid)
+  st_as_sf(crs = 4326)
   
 # spatial areas ----------------------------------------------------------------
 tracts = st_read("https://data.cityofnewyork.us/resource/63ge-mke6.geojson?$limit=5000")
@@ -61,6 +60,7 @@ b = baskets %>%
   merge(matched_basket_id, by.x = "basketid", by.y = ".", all.x = T) %>%
   mutate(Freq = ifelse(is.na(Freq), 0, Freq))
 
+b %>% arrange(desc(Freq)) %>% mutate(cum_perc = cumsum(Freq)/sum(Freq), perc = row_number()/nrow(b)) %>% View()
 
 quantile(b$Freq[b$Freq != 0], seq(0, 1, length.out = 6))
 pal = councildown::colorBin(
