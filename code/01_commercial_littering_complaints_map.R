@@ -177,20 +177,19 @@ map = leaflet(options = leafletOptions(attributionControl=FALSE,
               weight = 0, fillOpacity = 1, smoothFactor = 0, 
               popup = ~tooltip) %>%
   addCouncilStyle(add_dists = TRUE, 
-                  highlight_dists = council_districts$CounDist[council_districts$oath_per_business > 400]) %>%
+                  highlight_dists = council_districts$CounDist[council_districts$oath_per_business >= 260]) %>%
   addLegend_decreasing(position = "topleft", pal,
                        values = council_districts$oath_per_business, 
                        opacity = 1, 
-                       title = "# of OATH violations <br> per 100 businesses <br> (Apr 23-Mar 24)") 
-mapshot(map, file="visuals/map_oath_violations_per100businesses.html")
-saveWidget(map, file="visuals/map_oath_violations_per100businesses.html")
+                       title = "# of OATH violations <br> per 1000 businesses <br> (Apr 23-Mar 24)") 
+saveWidget(map, file="visuals/map_oath_violations_per1000businesses.html")
 
 # ------------------------------------------------------------------------------
 # just 311 complaints
 quantile(council_districts$dsny_per_business[council_districts$dsny_per_business!= 0], seq(0, 1, length.out = 6))
 pal = councildown::colorBin(
   palette = "warm",
-  bins = c(0, .3, .5, .65, 1, 8), 
+  bins = c(0, 4, 5, 6, 10, 80), 
   domain = c(0, council_districts$dsny_per_business)
 ) 
 
@@ -203,12 +202,12 @@ map = leaflet(options = leafletOptions(attributionControl=FALSE,
               weight = 0, fillOpacity = 1, smoothFactor = 0, 
               popup = ~tooltip) %>%
   addCouncilStyle(add_dists = TRUE, 
-                  highlight_dists = council_districts$CounDist[council_districts$dsny_per_business > 1]) %>%
+                  highlight_dists = council_districts$CounDist[council_districts$dsny_per_business >= 10]) %>%
   addLegend_decreasing(position = "topleft", pal,
                        values = council_districts$oath_per_business, 
                        opacity = 1, 
-                       title = "# of 311 complaints <br> per 100 businesses <br> (Apr 23-Mar 24)") 
-mapview::mapshot(map, "visuals/map_311_complaints_per100businesses.html")
+                       title = "# of 311 complaints <br> per 1000 businesses <br> (Apr 23-Mar 24)") 
+mapview::mapshot(map, "visuals/map_311_complaints_per1000businesses.html")
 
 # ------------------------------------------------------------------------------
 # get the oath, 311 complaints, and businesses at the HEX ----------------------
