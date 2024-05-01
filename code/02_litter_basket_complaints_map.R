@@ -157,11 +157,11 @@ council_districts = council_districts %>%
                           "<br><strong>311 Complaints:</strong> ", complaint_count, 
                           "<br><strong>Complaints per basket:</strong> ", round(complaints_per_basket, 2)))
 
-quantile(council_districts$complaints_per_basket*100, seq(0, 1, length.out = 6))
+quantile(council_districts$complaints_per_basket*1000, seq(0, 1, length.out = 6))
 pal = councildown::colorBin(
   palette = "indigo",
-  bins = c(0, 3, 5, 7, 10, 35), 
-  domain = c(0, council_districts$complaints_per_basket*100)
+  bins = c(0, 35, 50, 70, 110, 310), 
+  domain = c(0, council_districts$complaints_per_basket*1000)
 ) 
 
 map = leaflet(options = leafletOptions(attributionControl=FALSE, 
@@ -169,14 +169,13 @@ map = leaflet(options = leafletOptions(attributionControl=FALSE,
                                  minZoom = 10, 
                                  maxZoom = 15)) %>%
   addPolygons(data = council_districts, 
-              fillColor = ~pal(complaints_per_basket*100), 
+              fillColor = ~pal(complaints_per_basket*1000), 
               weight = 0, fillOpacity = 1, smoothFactor = 0, 
               popup = ~tooltip) %>%
   addCouncilStyle(add_dists = TRUE, 
-                  highlight_dists = council_districts$CounDist[council_districts$complaints_per_basket*100 >= 10]) %>%
+                  highlight_dists = council_districts$CounDist[council_districts$complaints_per_basket*1000 >= 70]) %>%
   addLegend_decreasing(position = "topleft", pal,
                        values = council_districts$complaints_per_basket, 
                        opacity = 1, 
-                       title = "# of 311 complaints <br> per 100 litter baskets <br> (Apr 23-Mar 24)") 
-mapview::mapshot(map, file="visuals/map_311_complaints_per100baskets.html")
-saveWidget(map, file="visuals/map_311_complaints_per100baskets.html")
+                       title = "# of 311 complaints <br> per 1000 litter baskets <br> (Apr 23-Mar 24)") 
+saveWidget(map, file="visuals/map_311_complaints_per1000baskets.html")

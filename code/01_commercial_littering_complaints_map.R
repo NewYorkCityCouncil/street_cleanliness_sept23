@@ -81,7 +81,7 @@ original_filter_oath = oath %>%
   select(boro, block, lot, unique_key, violation_date, charge_1_code_description) %>%
   mutate(boro = ifelse(boro == "QUEENS", 4, boro), 
          boro = ifelse(boro == "BROOKLYN", 3, boro), 
-         boro = ifelse(boro == "MANHATTAN", 2, boro), 
+         boro = ifelse(boro == "MANHATTAN", 1, boro), 
          boro = ifelse(boro == "BRONX", 2, boro),  
          boro = ifelse(boro == "STATEN ISLAND", 5, boro), 
          bbl = paste0(boro,
@@ -102,7 +102,7 @@ new_filter_oath = oath %>%
          violation_date, charge_1_code_description) %>%
   mutate(boro = ifelse(boro == "QUEENS", 4, boro), 
          boro = ifelse(boro == "BROOKLYN", 3, boro), 
-         boro = ifelse(boro == "MANHATTAN", 2, boro), 
+         boro = ifelse(boro == "MANHATTAN", 1, boro), 
          boro = ifelse(boro == "BRONX", 2, boro),  
          boro = ifelse(boro == "STATEN ISLAND", 5, boro), 
          bbl = paste0(boro,
@@ -156,7 +156,7 @@ council_districts = council_districts %>%
          tooltip = paste0("<strong>District:</strong> ", CounDist, 
                 "<br><strong>311 Complaints:</strong> ", dsny_count, 
                 "<br><strong>OATH Violations:</strong> ", oath_count, 
-                "<br><strong>Issues per 100 businesses:</strong> ", round(complaints_per_business, 2)))
+                "<br><strong>Issues per 1000 businesses:</strong> ", round(complaints_per_business, 2)))
 
 
 # ------------------------------------------------------------------------------
